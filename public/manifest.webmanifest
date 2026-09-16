@@ -1,0 +1,15 @@
+{
+  "name": "ROOMs吹田 アイキャッチ作成",
+  "short_name": "ROOMs吹田",
+  "description": "ROOMs吹田のWordPress投稿用アイキャッチ画像を作成するツール",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f5f7",
+  "theme_color": "#d86283",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

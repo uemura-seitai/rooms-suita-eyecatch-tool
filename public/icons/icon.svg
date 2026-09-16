@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="104" fill="#f8dfe7"/>
+  <rect x="70" y="92" width="372" height="328" rx="32" fill="#fff"/>
+  <rect x="102" y="130" width="308" height="180" rx="18" fill="#d86283"/>
+  <circle cx="167" cy="191" r="26" fill="#f9dfe7"/>
+  <path d="M121 280l72-70 54 50 48-44 94 64H121z" fill="#fff"/>
+  <text x="256" y="375" text-anchor="middle" font-family="Arial,sans-serif" font-size="45" font-weight="700" fill="#9c3557">ROOMs</text>
+</svg>
