@@ -2,5 +2,9 @@
 .toggle { display: flex; align-items: center; gap: 9px; min-height: 44px; font-weight: 700; }
 .toggle input { width: 22px; height: 22px; margin: 0; accent-color: #d86283; }
 canvas { aspect-ratio: auto; }
+.position-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.position-controls label { font-size: 13px; }
+.position-controls output { float: right; color: #963a57; font-weight: 700; }
+.reset-text-settings { width: 100%; margin-top: 6px; background: #f8f1f3; border-color: #e7b2c3; color: #963a57; }
 
 @media (max-width: 370px) { .post-types { grid-template-columns: 1fr; } }
