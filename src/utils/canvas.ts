@@ -21,8 +21,12 @@ function layoutText(ctx: CanvasRenderingContext2D, text: string, width: number, 
 function drawLines(ctx: CanvasRenderingContext2D, layout: ReturnType<typeof layoutText>, x: number, y: number, style: TextStyle, align: CanvasTextAlign) {
   ctx.font = `${style.weight} ${layout.size}px ${style.family || fontFamily}`; ctx.fillStyle = style.color; ctx.textAlign = align; ctx.textBaseline = 'top'; layout.lines.forEach((line, i) => ctx.fillText(line, x, y + i * layout.size * layout.lineHeight));
 }
-export async function render(canvas: HTMLCanvasElement, template: Template, values: { text1: string; text2: string; subtitle: string; tag1: string; tag2: string; label: string; text1Style: TextStyle; text2Style: TextStyle; verticalOffset: number; uploaded?: HTMLImageElement }) {
-  canvas.width = 1040; canvas.height = 585; const ctx = canvas.getContext('2d')!; const bg = await loadImage(template.asset); ctx.drawImage(bg, 0, 0, 1040, 585);
+function drawOutlinedLines(ctx: CanvasRenderingContext2D, layout: ReturnType<typeof layoutText>, x: number, y: number, style: TextStyle, align: CanvasTextAlign) {
+  ctx.font = `${style.weight} ${layout.size}px ${style.family || fontFamily}`; ctx.textAlign = align; ctx.textBaseline = 'top';
+  layout.lines.forEach((line, i) => { const lineY = y + i * layout.size * layout.lineHeight; ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(2, layout.size / 14); ctx.strokeStyle = '#ffffff'; ctx.strokeText(line, x + 2, lineY + 3); ctx.fillStyle = '#c62828'; ctx.fillText(line, x, lineY); });
+}
+export async function render(canvas: HTMLCanvasElement, template: Template, values: { text1: string; text2: string; subtitle: string; tag1: string; tag2: string; label: string; number: string; newsText: string; showNews: boolean; text1Style: TextStyle; text2Style: TextStyle; verticalOffset: number; uploaded?: HTMLImageElement }) {
+  canvas.width = template.canvas.width; canvas.height = template.canvas.height; const ctx = canvas.getContext('2d')!; const bg = await loadImage(template.asset); ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
   // Remove the template's hashtag placeholders before drawing only the user's tags.
   if (template.type === 'health') { ctx.save(); const band = ctx.getImageData(20, 550, 1, 1).data; ctx.fillStyle = `rgb(${band[0]},${band[1]},${band[2]})`; ctx.fillRect(0, 515, 1040, 70); (template.placeholderBoxes ?? []).forEach((b) => { const pixel = ctx.getImageData(b.x + 8, b.y + 8, 1, 1).data; ctx.fillStyle = `rgb(${pixel[0]},${pixel[1]},${pixel[2]})`; ctx.fillRect(b.x, b.y, b.width, b.height); }); ctx.restore(); }
   if (template.imageBox && values.uploaded) drawImageContain(ctx, values.uploaded, template.imageBox);
@@ -34,10 +38,22 @@ export async function render(canvas: HTMLCanvasElement, template: Template, valu
     for (let shrink = 0; first.height + second.height + gap > template.titleBox.height && shrink <= 68; shrink += 2) { first = layoutText(ctx, values.text1, template.titleBox.width, Math.max(24, values.text1Style.size - shrink), 24, 3, values.text1Style); second = layoutText(ctx, values.text2, template.titleBox.width, Math.max(24, values.text2Style.size - shrink), 24, 3, values.text2Style); }
     const groupHeight = first.height + second.height + gap; const groupY = template.titleBox.y + (template.titleBox.height - groupHeight) / 2 + values.verticalOffset; const centerX = template.titleBox.x + template.titleBox.width / 2;
     if (values.text1) drawLines(ctx, first, centerX, groupY, values.text1Style, 'center'); if (values.text2) drawLines(ctx, second, centerX, groupY + first.height + gap, values.text2Style, 'center');
-  } else {
+  } else if (template.type === 'health') {
     const titleBox = values.uploaded && template.imageBox ? { ...template.titleBox, width: Math.min(template.titleBox.width, template.imageBox.x - template.titleBox.x - 24) } : template.titleBox;
     const layout = layoutText(ctx, values.text1, titleBox.width, values.text1Style.size, 24, template.title.maxLines, values.text1Style); const y = titleBox.y + (titleBox.height - layout.height) / 2 + values.verticalOffset;
     drawLines(ctx, layout, titleBox.x, y, values.text1Style, 'left');
   }
   if (template.type === 'health') { ctx.font = `500 32px ${fontFamily}`; ctx.textAlign = 'left'; if (values.subtitle && template.subtitleBox) ctx.fillText(values.subtitle, template.subtitleBox.x, template.subtitleBox.y, template.subtitleBox.width); const tags = [values.tag1, values.tag2].map((tag) => tag.trim()).filter(Boolean).map((tag) => `#${tag.replace(/^#/, '')}`).join('　　'); if (tags) { ctx.fillStyle = '#333333'; ctx.font = `700 36px ${fontFamily}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(tags, canvas.width / 2, 550); ctx.textBaseline = 'alphabetic'; } if (template.labelBox && values.label) { ctx.fillStyle = '#333333'; ctx.font = `700 29px ${fontFamily}`; ctx.textAlign = 'left'; ctx.fillText(values.label, template.labelBox.x, template.labelBox.y, template.labelBox.width); } }
+  if (template.type === 'roomsRadio' || template.type === 'lineRich' || template.type === 'standFm') {
+    // The source artwork contains a placeholder # only. Cover that small zone before adding the automatically prefixed episode number.
+    if (template.numberBox) { ctx.fillStyle = '#ffffff'; ctx.fillRect(template.numberBox.x, template.numberBox.y, template.numberBox.width, template.numberBox.height); ctx.fillStyle = '#171717'; ctx.font = `700 ${template.type === 'standFm' ? 42 : template.type === 'lineRich' ? 29 : 38}px ${fontFamily}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(`#${values.number.trim()}`, template.numberBox.x, template.numberBox.y); }
+    if (template.type !== 'standFm' && !values.showNews && template.newsBandBox) { ctx.fillStyle = '#ffffff'; ctx.fillRect(template.newsBandBox.x, template.newsBandBox.y, template.newsBandBox.width, template.newsBandBox.height); }
+    const subtitleStyle: TextStyle = { size: template.type === 'standFm' ? 22 : template.type === 'lineRich' ? 25 : 31, family: fontFamily, color: '#1d1d1d', weight: 700 };
+    if (values.subtitle && template.subtitleBox) { const subtitle = layoutText(ctx, values.subtitle, template.subtitleBox.width, subtitleStyle.size, 16, 2, subtitleStyle, 1.2); drawLines(ctx, subtitle, template.subtitleBox.x + template.subtitleBox.width / 2, template.subtitleBox.y, subtitleStyle, 'center'); }
+    const titleStyle: TextStyle = { size: template.title.max, family: fontFamily, color: template.type === 'standFm' ? '#1e1e1e' : '#c62828', weight: 700 };
+    const title = layoutText(ctx, values.text1, template.titleBox.width, template.title.max, template.title.min, template.title.maxLines, titleStyle, 1.18);
+    const titleY = template.titleBox.y + (template.titleBox.height - title.height) / 2;
+    if (template.type === 'standFm') drawLines(ctx, title, template.titleBox.x + template.titleBox.width / 2, titleY, titleStyle, 'center'); else drawOutlinedLines(ctx, title, template.titleBox.x + template.titleBox.width / 2, titleY, titleStyle, 'center');
+    if (template.type !== 'standFm' && values.showNews && values.newsText && template.newsTextBox) { const newsStyle: TextStyle = { size: template.type === 'lineRich' ? 29 : 37, family: fontFamily, color: '#ffffff', weight: 700 }; const news = layoutText(ctx, values.newsText, template.newsTextBox.width, newsStyle.size, 20, 2, newsStyle, 1.15); drawLines(ctx, news, template.newsTextBox.x, template.newsTextBox.y + (template.newsTextBox.height - news.height) / 2, newsStyle, 'left'); }
+  }
 }

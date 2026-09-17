@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './style.css';
+import './special-posts.css';
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
 
 // Offline caching is intentionally disabled so deployed updates never use a stale app shell.
