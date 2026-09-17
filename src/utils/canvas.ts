@@ -2,7 +2,7 @@ import type { Box, Template } from '../config/templateConfig';
 
 const fontFamily = '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", YuGothic, sans-serif';
 export type TextStyle = { size: number; family: string; color: string; weight: 400 | 500 | 600 | 700 | 800 | 900 };
-export type SpecialTextStyle = TextStyle & { offsetX: number; offsetY: number };
+export type SpecialTextStyle = TextStyle & { offsetX: number; offsetY: number; lineColors?: [string, string, string] };
 export const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = src; });
 export function drawImageContain(ctx: CanvasRenderingContext2D, image: CanvasImageSource, box: Box) {
   const source = image as HTMLImageElement; const scale = Math.min(box.width / source.naturalWidth, box.height / source.naturalHeight); const width = source.naturalWidth * scale; const height = source.naturalHeight * scale;
@@ -24,7 +24,12 @@ function drawLines(ctx: CanvasRenderingContext2D, layout: ReturnType<typeof layo
 }
 function drawOutlinedLines(ctx: CanvasRenderingContext2D, layout: ReturnType<typeof layoutText>, x: number, y: number, style: TextStyle, align: CanvasTextAlign) {
   ctx.font = `${style.weight} ${layout.size}px ${style.family || fontFamily}`; ctx.textAlign = align; ctx.textBaseline = 'top';
-  layout.lines.forEach((line, i) => { const lineY = y + i * layout.size * layout.lineHeight; ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(3, layout.size / 16); ctx.strokeStyle = '#eeeeee'; ctx.shadowColor = 'rgba(70,70,70,.48)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 4; ctx.strokeText(line, x, lineY); ctx.shadowColor = 'transparent'; ctx.fillStyle = style.color; ctx.fillText(line, x, lineY); });
+  const colors = (style as SpecialTextStyle).lineColors;
+  layout.lines.forEach((line, i) => { const lineY = y + i * layout.size * layout.lineHeight; ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(3, layout.size / 16); ctx.strokeStyle = '#eeeeee'; ctx.shadowColor = 'rgba(70,70,70,.48)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 4; ctx.strokeText(line, x, lineY); ctx.shadowColor = 'transparent'; ctx.fillStyle = colors?.[i] || style.color; ctx.fillText(line, x, lineY); });
+}
+function drawTitleLines(ctx: CanvasRenderingContext2D, layout: ReturnType<typeof layoutText>, x: number, y: number, style: SpecialTextStyle) {
+  ctx.font = `${style.weight} ${layout.size}px ${style.family || fontFamily}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  layout.lines.forEach((line, i) => { ctx.fillStyle = style.lineColors?.[i] || style.color; ctx.fillText(line, x, y + i * layout.size * layout.lineHeight); });
 }
 export async function render(canvas: HTMLCanvasElement, template: Template, values: { text1: string; text2: string; subtitle: string; tag1: string; tag2: string; label: string; number: string; newsText: string; showNews: boolean; text1Style: TextStyle; text2Style: TextStyle; specialStyles: { number: SpecialTextStyle; subtitle: SpecialTextStyle; title: SpecialTextStyle; news: SpecialTextStyle }; verticalOffset: number; uploaded?: HTMLImageElement }) {
   canvas.width = template.canvas.width; canvas.height = template.canvas.height; const ctx = canvas.getContext('2d')!; const bg = await loadImage(template.asset); ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
@@ -62,7 +67,8 @@ export async function render(canvas: HTMLCanvasElement, template: Template, valu
     // never a value that can enlarge text after the user has deliberately reduced it.
     const title = layoutText(ctx, values.text1, template.titleBox.width, titleStyle.size, Math.min(template.title.min, titleStyle.size), template.title.maxLines, titleStyle, 1.18);
     const titleY = template.titleBox.y + (template.titleBox.height - title.height) / 2;
-    if (template.type === 'standFm') drawLines(ctx, title, template.titleBox.x + template.titleBox.width / 2 + titleStyle.offsetX, titleY + titleStyle.offsetY, titleStyle, 'center'); else drawOutlinedLines(ctx, title, template.titleBox.x + template.titleBox.width / 2 + titleStyle.offsetX, titleY + titleStyle.offsetY, titleStyle, 'center');
+    const titleX = template.titleBox.x + titleStyle.offsetX;
+    if (template.type === 'standFm') drawTitleLines(ctx, title, titleX, titleY + titleStyle.offsetY, titleStyle); else drawOutlinedLines(ctx, title, titleX, titleY + titleStyle.offsetY, titleStyle, 'left');
     if (template.type !== 'standFm' && values.showNews && values.newsText && template.newsTextBox) { const newsStyle = special.news; const news = layoutText(ctx, values.newsText, template.newsTextBox.width, newsStyle.size, 20, 2, newsStyle, 1.1); drawLines(ctx, news, template.newsTextBox.x + newsStyle.offsetX, template.newsTextBox.y + (template.newsTextBox.height - news.height) / 2 + newsStyle.offsetY, newsStyle, 'left'); }
   }
 }
