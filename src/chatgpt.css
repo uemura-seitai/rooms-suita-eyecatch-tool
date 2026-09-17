@@ -1,0 +1,23 @@
+.chat-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.chat-open {
+  display: grid;
+  min-height: 48px;
+  place-items: center;
+  border: 1px solid #dedbe0;
+  border-radius: 10px;
+  color: #37323a;
+  font-weight: 600;
+  padding: 9px;
+  text-align: center;
+  text-decoration: none;
+}
+
+@media (max-width: 370px) {
+  .chat-actions { grid-template-columns: 1fr; }
+}

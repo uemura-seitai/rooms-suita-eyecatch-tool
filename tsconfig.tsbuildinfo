@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/config/templateconfig.ts","./src/utils/canvas.ts"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/config/chatgptpromptconfig.ts","./src/config/templateconfig.ts","./src/utils/canvas.ts","./src/utils/chatgptprompt.ts"],"version":"5.9.3"}
