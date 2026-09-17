@@ -8,11 +8,20 @@ const noticeShops = [
 ] as const;
 const healthShops = [['uemura', 'うえむら整体院'], ['aiko', 'aiko'], ['kstyle', 'K-STYLE'], ['maki', 'Makiのおすすめレシピ'], ['kokorone', 'こころね発酵ごはん']] as const;
 
+// Keep each health template's optional image and subtitle positions independently adjustable.
+const healthTemplateLayouts: Record<string, Pick<Template, 'subtitleBox' | 'imageBox'>> = {
+  uemura: { subtitleBox: { x: 60, y: 392, width: 610, height: 45 }, imageBox: { x: 500, y: 185, width: 150, height: 200 } },
+  aiko: { subtitleBox: { x: 60, y: 392, width: 610, height: 45 }, imageBox: { x: 540, y: 170, width: 250, height: 220 } },
+  kstyle: { subtitleBox: { x: 60, y: 392, width: 610, height: 45 }, imageBox: { x: 540, y: 170, width: 250, height: 220 } },
+  maki: { subtitleBox: { x: 60, y: 392, width: 610, height: 45 }, imageBox: { x: 530, y: 170, width: 220, height: 220 } },
+  kokorone: { subtitleBox: { x: 60, y: 392, width: 610, height: 45 }, imageBox: { x: 520, y: 170, width: 235, height: 220 } },
+};
+
 export const templates: Template[] = [
   ...noticeShops.map(([id, shop]) => ({ id, shop, type: 'notice' as const, asset: templateAsset('notice', id), titleBox: { x: 60, y: 200, width: 410, height: 250 }, imageBox: { x: 500, y: 180, width: 260, height: 270 }, title: { max: 60, min: 36, align: 'center' as CanvasTextAlign, maxLines: 4 } })),
   ...healthShops.map(([id, shop]) => ({
     id, shop, type: 'health' as const, asset: templateAsset('health', id), titleBox: { x: 60, y: 175, width: 590, height: 230 }, title: { max: 72, min: 44, align: 'left' as CanvasTextAlign, maxLines: 4 },
-    subtitleBox: { x: 60, y: 420, width: 610, height: 45 }, tagsBox: { x: 60, y: 530, width: 610, height: 34 },
+    ...healthTemplateLayouts[id], tagsBox: { x: 0, y: 515, width: 1040, height: 70 },
     // These rectangles cover only the known temporary text zones. Adjust if replacement artwork changes.
     ...(id === 'kstyle' ? { labelBox: { x: 60, y: 48, width: 350, height: 54 }, placeholderBoxes: [{ x: 60, y: 48, width: 350, height: 54 }] } : {}),
     ...(id === 'kokorone' ? { labelBox: { x: 32, y: 76, width: 213, height: 75 }, placeholderBoxes: [{ x: 32, y: 76, width: 213, height: 75 }] } : {}),
