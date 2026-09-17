@@ -48,12 +48,19 @@ export async function render(canvas: HTMLCanvasElement, template: Template, valu
   if (template.type === 'roomsRadio' || template.type === 'lineRich' || template.type === 'standFm') {
     // The source artwork contains a placeholder # only. Cover that small zone before adding the automatically prefixed episode number.
     const special = values.specialStyles;
-    if (template.numberBox) { ctx.fillStyle = '#ffffff'; ctx.fillRect(template.numberBox.x, template.numberBox.y, template.numberBox.width, template.numberBox.height); ctx.fillStyle = special.number.color; ctx.font = `${special.number.weight} ${special.number.size}px ${special.number.family || fontFamily}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(`#${values.number.trim()}`, template.numberBox.x + special.number.offsetX, template.numberBox.y + special.number.offsetY); }
+    if (template.numberBox) {
+      // stand fm's placeholder is already printed directly over its grey artwork. Do not paint a white rectangle there.
+      // The other two templates have a white top area, so clearing their placeholder remains visually identical to the source.
+      if (template.type !== 'standFm') { ctx.fillStyle = '#ffffff'; ctx.fillRect(template.numberBox.x, template.numberBox.y, template.numberBox.width, template.numberBox.height); }
+      ctx.fillStyle = special.number.color; ctx.font = `${special.number.weight} ${special.number.size}px ${special.number.family || fontFamily}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(`#${values.number.trim()}`, template.numberBox.x + special.number.offsetX, template.numberBox.y + special.number.offsetY);
+    }
     if (template.type !== 'standFm' && !values.showNews && template.newsBandBox) { ctx.fillStyle = '#ffffff'; ctx.fillRect(template.newsBandBox.x, template.newsBandBox.y, template.newsBandBox.width, template.newsBandBox.height); }
     const subtitleStyle = special.subtitle;
     if (values.subtitle && template.subtitleBox) { const subtitle = layoutText(ctx, values.subtitle, template.subtitleBox.width, subtitleStyle.size, 16, 2, subtitleStyle, 1.15); drawLines(ctx, subtitle, template.subtitleBox.x + subtitleStyle.offsetX, template.subtitleBox.y + subtitleStyle.offsetY, subtitleStyle, 'left'); }
     const titleStyle = special.title;
-    const title = layoutText(ctx, values.text1, template.titleBox.width, template.title.max, template.title.min, template.title.maxLines, titleStyle, 1.18);
+    // The selected style size is the upper bound. The template value is only the initial UI default,
+    // never a value that can enlarge text after the user has deliberately reduced it.
+    const title = layoutText(ctx, values.text1, template.titleBox.width, titleStyle.size, Math.min(template.title.min, titleStyle.size), template.title.maxLines, titleStyle, 1.18);
     const titleY = template.titleBox.y + (template.titleBox.height - title.height) / 2;
     if (template.type === 'standFm') drawLines(ctx, title, template.titleBox.x + template.titleBox.width / 2 + titleStyle.offsetX, titleY + titleStyle.offsetY, titleStyle, 'center'); else drawOutlinedLines(ctx, title, template.titleBox.x + template.titleBox.width / 2 + titleStyle.offsetX, titleY + titleStyle.offsetY, titleStyle, 'center');
     if (template.type !== 'standFm' && values.showNews && values.newsText && template.newsTextBox) { const newsStyle = special.news; const news = layoutText(ctx, values.newsText, template.newsTextBox.width, newsStyle.size, 20, 2, newsStyle, 1.1); drawLines(ctx, news, template.newsTextBox.x + newsStyle.offsetX, template.newsTextBox.y + (template.newsTextBox.height - news.height) / 2 + newsStyle.offsetY, newsStyle, 'left'); }
