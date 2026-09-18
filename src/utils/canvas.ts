@@ -19,6 +19,28 @@ function layoutText(ctx: CanvasRenderingContext2D, text: string, width: number, 
   for (let size = maxSize; size >= minSize; size -= 2) { ctx.font = `${style.weight} ${size}px ${style.family || fontFamily}`; const lines = linesFor(ctx, text, width); if (lines.length <= maxLines) return { size, lines, height: lines.length * size * lineHeight, lineHeight }; }
   ctx.font = `${style.weight} ${minSize}px ${style.family || fontFamily}`; const lines = linesFor(ctx, text, width).slice(0, maxLines); return { size: minSize, lines, height: lines.length * minSize * lineHeight, lineHeight };
 }
+/**
+ * Keep a special-template title as an array of display lines.  The selected
+ * size is always tried first; it is reduced only when its width, line count or
+ * height would overflow the title box.  For an accidentally entered fourth
+ * hard line, relax the hard breaks and reflow the title into at most 3 lines.
+ */
+function layoutSpecialTitle(ctx: CanvasRenderingContext2D, text: string, box: Box, selectedSize: number, style: TextStyle, maxLines: number, lineHeight = 1.18) {
+  const hardBreakText = text.replace(/\r/g, '');
+  const reflowedText = hardBreakText.split('\n').filter(Boolean).join('');
+  for (let size = selectedSize; size >= 24; size -= 1) {
+    ctx.font = `${style.weight} ${size}px ${style.family || fontFamily}`;
+    const hardBreakLines = linesFor(ctx, hardBreakText, box.width);
+    const lines = hardBreakLines.length <= maxLines ? hardBreakLines : linesFor(ctx, reflowedText, box.width);
+    const height = lines.length * size * lineHeight;
+    if (lines.length <= maxLines && height <= box.height) return { size, lines, height, lineHeight };
+  }
+  // This is only reachable for unusually long titles.  Preserve all text by
+  // reducing it to the smallest practical size instead of silently dropping a line.
+  ctx.font = `${style.weight} 24px ${style.family || fontFamily}`;
+  const lines = linesFor(ctx, reflowedText, box.width);
+  return { size: 24, lines: lines.slice(0, maxLines), height: Math.min(lines.length, maxLines) * 24 * lineHeight, lineHeight };
+}
 function drawLines(ctx: CanvasRenderingContext2D, layout: ReturnType<typeof layoutText>, x: number, y: number, style: TextStyle, align: CanvasTextAlign) {
   ctx.font = `${style.weight} ${layout.size}px ${style.family || fontFamily}`; ctx.fillStyle = style.color; ctx.textAlign = align; ctx.textBaseline = 'top'; layout.lines.forEach((line, i) => ctx.fillText(line, x, y + i * layout.size * layout.lineHeight));
 }
@@ -63,9 +85,9 @@ export async function render(canvas: HTMLCanvasElement, template: Template, valu
     const subtitleStyle = special.subtitle;
     if (values.subtitle && template.subtitleBox) { const subtitle = layoutText(ctx, values.subtitle, template.subtitleBox.width, subtitleStyle.size, 16, 2, subtitleStyle, 1.15); drawLines(ctx, subtitle, template.subtitleBox.x + subtitleStyle.offsetX, template.subtitleBox.y + subtitleStyle.offsetY, subtitleStyle, 'left'); }
     const titleStyle = special.title;
-    // The selected style size is the upper bound. The template value is only the initial UI default,
-    // never a value that can enlarge text after the user has deliberately reduced it.
-    const title = layoutText(ctx, values.text1, template.titleBox.width, titleStyle.size, Math.min(template.title.min, titleStyle.size), template.title.maxLines, titleStyle, 1.18);
+    // The selected size is the upper bound. It is never raised back to a
+    // template default after a user has selected a smaller value.
+    const title = layoutSpecialTitle(ctx, values.text1, template.titleBox, titleStyle.size, titleStyle, template.title.maxLines);
     const titleY = template.titleBox.y + (template.titleBox.height - title.height) / 2;
     const titleX = template.titleBox.x + titleStyle.offsetX;
     if (template.type === 'standFm') drawTitleLines(ctx, title, titleX, titleY + titleStyle.offsetY, titleStyle); else drawOutlinedLines(ctx, title, titleX, titleY + titleStyle.offsetY, titleStyle, 'left');
