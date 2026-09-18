@@ -16,6 +16,9 @@ export type PromptInput = {
   uploadName: string;
   additionalInstructions: string;
   textStyleSummary: string;
+  instagramUrl?: string;
+  instagramCaption?: string;
+  instagramMediaType?: string;
 };
 
 const valueLine = (label: string, value: string) => `- ${label}: ${value.trim() || '（未入力）'}`;
@@ -32,11 +35,14 @@ export function createChatGptPrompt(input: PromptInput) {
     valueLine('選択中の画像ファイル名', input.uploadName || '（画像未選択）'), valueLine('文字設定の概要', input.textStyleSummary), valueLine('追加の指示', input.additionalInstructions || '（なし）'),
     ...(healthDetails ? ['- 健康情報の詳細設定:', healthDetails] : []),
   ].join('\n');
+  const instagramContext = input.instagramCaption ? [
+    '## Instagram取得情報', valueLine('Instagram投稿URL', input.instagramUrl || ''), valueLine('加盟店', shopName), valueLine('Instagram元投稿本文', input.instagramCaption), valueLine('投稿タイプ', input.instagramMediaType || ''),
+  ].join('\n') : '';
 
   if (input.requestType === 'post') return [
-    '添付した画像の内容をもとに、ROOMs吹田のWordPress投稿用文章を作成してください。',
+    input.instagramCaption ? '以下のInstagram投稿内容をもとに、ROOMs吹田のWordPress投稿用文章を作成してください。' : '添付した画像の内容をもとに、ROOMs吹田のWordPress投稿用文章を作成してください。',
     '画像も添付する予定です。画像に書かれていない情報は勝手に追加せず、読み取れない情報は推測しないでください。', '', '## 現在の入力情報', currentInfo,
-    shopConfig?.postTextHint ? `\n## 加盟店ごとの補足\n${shopConfig.postTextHint}` : '', '', '## 必ず守ること',
+    instagramContext, shopConfig?.postTextHint ? `\n## 加盟店ごとの補足\n${shopConfig.postTextHint}` : '', '', '## 必ず守ること',
     '- WordPressブロックエディターへ貼れる通常テキストで作成してください。', '- 見出しは ## と ### を使用してください。', '- 投稿タイトルと本文を分けて出力してください。', '- 添付画像と上記の入力内容の範囲だけを根拠にしてください。',
   ].filter(Boolean).join('\n');
 

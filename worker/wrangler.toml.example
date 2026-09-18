@@ -1,0 +1,7 @@
+name = "rooms-instagram-api"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+# Set these with `wrangler secret put`, never in this file:
+# INSTAGRAM_ACCOUNTS_JSON
+# Optional variables: META_GRAPH_VERSION, META_GRAPH_BASE, INSTAGRAM_MOCK

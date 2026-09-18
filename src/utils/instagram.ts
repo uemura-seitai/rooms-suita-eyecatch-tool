@@ -1,4 +1,4 @@
-export type InstagramMediaType = 'post' | 'reel';
+export type InstagramMediaType = 'post' | 'reel' | 'IMAGE' | 'VIDEO' | 'REELS' | 'CAROUSEL_ALBUM';
 export type InstagramPostData = {
   sourceUrl: string;
   normalizedUrl: string;
@@ -6,9 +6,11 @@ export type InstagramPostData = {
   mediaType: InstagramMediaType;
   username?: string;
   caption?: string;
+  mediaUrl?: string;
   imageUrl?: string;
   thumbnailUrl?: string;
   timestamp?: string;
+  shopId?: string;
 };
 
 export type InstagramParseResult = { data: InstagramPostData } | { error: 'empty' | 'not-instagram' | 'malformed' };
@@ -29,14 +31,17 @@ export function parseInstagramUrl(sourceUrl: string): InstagramParseResult {
 // token is ever read or stored by this client-side application.
 export async function fetchInstagramPost(post: InstagramPostData, apiUrl = import.meta.env.VITE_INSTAGRAM_API_URL): Promise<InstagramPostData | undefined> {
   if (!apiUrl) return undefined;
-  const response = await fetch(`${apiUrl.replace(/\/$/, '')}/instagram-post?url=${encodeURIComponent(post.normalizedUrl)}`);
-  if (!response.ok) throw new Error('Instagram API request failed');
-  return { ...post, ...await response.json() };
+  const response = await fetch(`${apiUrl.replace(/\/$/, '')}/instagram/resolve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: post.normalizedUrl }) });
+  const body = await response.json() as { ok?: boolean; post?: Partial<InstagramPostData>; error?: string; code?: string };
+  if (!response.ok || !body.ok || !body.post) { const error = new Error(body.error || 'Instagram投稿の取得に失敗しました。もう一度お試しください。'); (error as Error & { code?: string }).code = body.code; throw error; }
+  return { ...post, ...body.post };
 }
 
-export type InstagramFormTarget = { shop?: string; text1?: string; text2?: string; imageUrl?: string; instagramCaption?: string; instagramUrl?: string };
+export type InstagramFormTarget = { shop?: string; imageUrl?: string; instagramCaption?: string; instagramUrl?: string };
 
 // Deliberately does not invent values: only API-provided fields are applied.
 export function applyInstagramPostToForm(post: InstagramPostData): InstagramFormTarget {
-  return { imageUrl: post.imageUrl || post.thumbnailUrl, instagramCaption: post.caption, instagramUrl: post.normalizedUrl };
+  return { shop: post.shopId, imageUrl: post.mediaUrl || post.imageUrl || post.thumbnailUrl, instagramCaption: post.caption, instagramUrl: post.normalizedUrl };
 }
+
+export const instagramImageProxyUrl = (imageUrl: string, apiUrl = import.meta.env.VITE_INSTAGRAM_API_URL) => apiUrl ? `${apiUrl.replace(/\/$/, '')}/instagram/image-proxy?url=${encodeURIComponent(imageUrl)}` : imageUrl;

@@ -1,0 +1,15 @@
+{
+  "name": "rooms-instagram-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "wrangler dev src/index.ts",
+    "deploy": "wrangler deploy src/index.ts"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260917.1",
+    "typescript": "^5.6.3",
+    "wrangler": "^4.38.0"
+  }
+}
