@@ -9,5 +9,13 @@ canvas { aspect-ratio: auto; }
 .post-type-select { min-height: 56px; margin-top: 0; padding: 10px 14px; font-size: 18px; font-weight: 600; }
 .clear-inputs { display: block; width: 100%; min-height: 46px; margin: 0 0 14px; background: #f8f1f3; border-color: #e7b2c3; color: #963a57; font-size: 14px; }
 .clear-status { margin: 12px 0 -6px; color: #58703c; font-size: 14px; text-align: center; }
+.instagram-import h2 { margin-bottom: 10px; }
+.instagram-url-label { display: block; font-size: 14px; font-weight: 600; }
+.instagram-load { width: 100%; min-height: 56px; margin-top: 14px; background: #f8f1f3; border-color: #e7b2c3; color: #963a57; font-size: 17px; }
+.instagram-error { margin: 12px 0 0; color: #ae3030; font-size: 14px; }
+.instagram-result { margin-top: 14px; padding: 13px; border-radius: 9px; background: #f8f1f3; color: #493d43; font-size: 14px; line-height: 1.55; }
+.instagram-result p { margin: 5px 0; }
+.instagram-normalized { overflow-wrap: anywhere; color: #6a6870; font-size: 12px; }
+.instagram-api-note { color: #806a71; font-weight: 600; }
 
 @media (max-width: 370px) { .post-types { grid-template-columns: 1fr; } }
