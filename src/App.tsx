@@ -16,8 +16,8 @@ const defaultStyle = (size: number): TextStyle => ({ size, family: FONT_OPTIONS[
 type SpecialStyles = { number: SpecialTextStyle; subtitle: SpecialTextStyle; title: SpecialTextStyle; news: SpecialTextStyle };
 const specialStyle = (size: number, color: string, family = FONT_OPTIONS[0].value, weight: SpecialTextStyle['weight'] = 700): SpecialTextStyle => ({ size, color, family, weight, offsetX: 0, offsetY: 0 });
 const defaultSpecialStyles = (postType: PostType | ''): SpecialStyles => postType === 'standFm'
-  ? { number: specialStyle(46, '#111111'), subtitle: { ...specialStyle(28, '#111111', FONT_OPTIONS[1].value, 500), offsetX: -77, offsetY: 14 }, title: { ...specialStyle(66, '#111111', FONT_OPTIONS[1].value, 700), lineColors: ['#111111', '#111111', '#111111'] }, news: specialStyle(52, '#ffffff') }
-  : { number: specialStyle(44, '#000000'), subtitle: specialStyle(40, '#111111'), title: { ...specialStyle(postType === 'lineRich' ? 98 : 118, '#ff3b30', FONT_OPTIONS[0].value, 900), lineColors: ['#ff3b30', '#ff3b30', '#ff3b30'] }, news: specialStyle(52, '#ffffff') };
+  ? { number: specialStyle(30, '#111111'), subtitle: { ...specialStyle(28, '#111111', FONT_OPTIONS[1].value, 500), offsetX: -77, offsetY: 14 }, title: { ...specialStyle(66, '#111111', FONT_OPTIONS[1].value, 700), lineColors: ['#111111', '#111111', '#111111'] }, news: specialStyle(52, '#ffffff') }
+  : { number: specialStyle(30, '#000000'), subtitle: specialStyle(40, '#111111'), title: { ...specialStyle(postType === 'lineRich' ? 98 : 118, '#ff3b30', FONT_OPTIONS[0].value, 900), lineColors: ['#ff3b30', '#ff3b30', '#ff3b30'] }, news: specialStyle(52, '#ffffff') };
 const dateString = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' }).split('-').join('');
 const CHATGPT_CHAT_URL = 'https://chatgpt.com/c/6aaa81d5-feb0-83e8-81d2-cd22707f4501';
 const WORDPRESS_DRAFT_URL = 'https://member-uemura-seitai.com/wp-admin/edit.php?post_status=draft&post_type=post';
