@@ -73,13 +73,15 @@ export async function render(canvas: HTMLCanvasElement, template: Template, valu
   }
   if (template.type === 'health') { ctx.font = `500 32px ${fontFamily}`; ctx.textAlign = 'left'; if (values.subtitle && template.subtitleBox) ctx.fillText(values.subtitle, template.subtitleBox.x, template.subtitleBox.y, template.subtitleBox.width); const tags = [values.tag1, values.tag2].map((tag) => tag.trim()).filter(Boolean).map((tag) => `#${tag.replace(/^#/, '')}`).join('　　'); if (tags) { ctx.fillStyle = '#333333'; ctx.font = `700 36px ${fontFamily}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(tags, canvas.width / 2, 550); ctx.textBaseline = 'alphabetic'; } if (template.labelBox && values.label) { ctx.fillStyle = '#333333'; ctx.font = `700 29px ${fontFamily}`; ctx.textAlign = 'left'; ctx.fillText(values.label, template.labelBox.x, template.labelBox.y, template.labelBox.width); } }
   if (template.type === 'roomsRadio' || template.type === 'lineRich' || template.type === 'standFm') {
-    // The source artwork contains a placeholder # only. Cover that zone before adding the automatically prefixed episode number.
+    // The source artwork contains a placeholder #. Remove it before drawing the episode number.
     const special = values.specialStyles;
     if (template.numberBox) {
-      // Clear the baked-in placeholder before rendering the one canonical `#${number}` value.
-      // stand fm uses its adjacent grey background rather than a white rectangle.
-      if (template.type === 'standFm') { const grey = ctx.getImageData(template.numberBox.x + template.numberBox.width + 4, template.numberBox.y + Math.floor(template.numberBox.height / 2), 1, 1).data; ctx.fillStyle = `rgb(${grey[0]},${grey[1]},${grey[2]})`; ctx.fillRect(template.numberBox.x, template.numberBox.y, template.numberBox.width, template.numberBox.height); } else { ctx.fillStyle = '#ffffff'; ctx.fillRect(template.numberBox.x, template.numberBox.y, template.numberBox.width, template.numberBox.height); }
-      ctx.fillStyle = special.number.color; ctx.font = `${special.number.weight} ${special.number.size}px ${special.number.family || fontFamily}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(`#${values.number.trim()}`, template.numberBox.x + special.number.offsetX, template.numberBox.y + special.number.offsetY);
+      // The stand fm source PNG has a baked-in #. Its full visual footprint is
+      // covered with a 175 × 105px grey rectangle (x: 0–175, y: 395–500),
+      // leaving a 30px+ margin around the original glyph and no white patch.
+      if (template.type === 'standFm') { const grey = ctx.getImageData(170, 490, 1, 1).data; ctx.fillStyle = `rgb(${grey[0]},${grey[1]},${grey[2]})`; ctx.fillRect(0, 395, 175, 105); } else { ctx.fillStyle = '#ffffff'; ctx.fillRect(template.numberBox.x, template.numberBox.y, template.numberBox.width, template.numberBox.height); }
+      const episodeNumber = values.number.replace(/[^0-9]/g, '');
+      ctx.fillStyle = special.number.color; ctx.font = `${special.number.weight} ${special.number.size}px ${special.number.family || fontFamily}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(template.type === 'standFm' ? episodeNumber : `#${episodeNumber}`, template.numberBox.x + special.number.offsetX, template.numberBox.y + special.number.offsetY);
     }
     if (template.type !== 'standFm' && !values.showNews && template.newsBandBox) { ctx.fillStyle = '#ffffff'; ctx.fillRect(template.newsBandBox.x, template.newsBandBox.y, template.newsBandBox.width, template.newsBandBox.height); }
     const subtitleStyle = special.subtitle;
