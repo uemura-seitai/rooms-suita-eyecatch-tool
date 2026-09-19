@@ -4,7 +4,7 @@ export type PromptRequestType = 'post' | 'image';
 
 export type PromptInput = {
   requestType: PromptRequestType;
-  postType: 'notice' | 'health' | 'roomsRadio' | 'lineRich' | 'standFm' | '';
+  postType: 'notice' | 'health' | 'roomsRadio' | 'lineRich' | 'standFm' | 'officialLine' | '';
   shopId: string;
   shopName: string;
   text1: string;
@@ -22,7 +22,7 @@ export type PromptInput = {
 };
 
 const valueLine = (label: string, value: string) => `- ${label}: ${value.trim() || '（未入力）'}`;
-const postTypeName = (type: PromptInput['postType']) => type === 'notice' ? 'お知らせ投稿' : type === 'health' ? '健康情報' : type === 'roomsRadio' ? 'ROOMsラジオ' : type === 'lineRich' ? 'LINEリッチメッセージ' : type === 'standFm' ? 'stand fm' : '（未選択）';
+const postTypeName = (type: PromptInput['postType']) => type === 'notice' ? 'お知らせ投稿' : type === 'health' ? '健康情報' : type === 'roomsRadio' ? 'ROOMsラジオ' : type === 'lineRich' ? 'LINEリッチメッセージ' : type === 'standFm' ? 'stand fm' : type === 'officialLine' ? '公式LINE' : '（未選択）';
 
 export function createChatGptPrompt(input: PromptInput) {
   const shopConfig = getShopPromptConfig(input.shopId);
