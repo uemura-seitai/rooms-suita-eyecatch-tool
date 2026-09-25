@@ -4,10 +4,20 @@ export type OfficialLineItemType = 'radio' | 'health' | 'notice';
 export type OfficialLineSlot = { enabled: boolean; type: OfficialLineItemType; title: string; imageId?: string; uploadedImage?: string; scale: number; offsetX: number; offsetY: number; titleFontSize: number; linkUrl: string };
 export type OfficialLineState = { slots: OfficialLineSlot[] };
 
-export const LINE_CANVAS = { width: 1080, height: 1920 };
+export const LINE_CANVAS = { width: 1080, height: 2631 };
 export const lineTypeLabel: Record<OfficialLineItemType, string> = { radio: 'ラジオ', health: '健康情報', notice: 'お知らせ投稿' };
 export const lineTypeColor: Record<OfficialLineItemType, string> = { radio: '#f6b7c8', health: '#aee1ed', notice: '#f8df84' };
 const font = '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif';
+const cardX = 48;
+const cardWidth = 984;
+const imageInset = 14;
+const titleHeight = 116;
+const imageWidth = cardWidth - imageInset * 2;
+// The source eye-catch images are 16:9. Keep this derived from the actual
+// painted width so an unedited 16:9 image receives no crop at scale 100%.
+const imageHeight = Math.round(imageWidth / 16 * 9);
+const cardHeight = titleHeight + imageInset + imageHeight + imageInset;
+const slotGap = 24;
 
 /**
  * `scale` is relative to the automatically calculated cover scale.  Therefore
@@ -77,18 +87,18 @@ export async function renderOfficialLine(canvas: HTMLCanvasElement, state: Offic
   const imagePromises = state.slots.map((item) => item.enabled && item.uploadedImage ? load(item.uploadedImage).catch(() => undefined) : Promise.resolve(undefined));
   const images = await Promise.all(imagePromises);
   state.slots.forEach((item, index) => {
-    const y = Math.ceil(headerHeight) + 30 + index * 460; const x = 48; const cardW = 984; const cardH = 440; const titleH = 116; const imageY = y + titleH; const imageH = 296;
-    ctx.fillStyle = 'rgba(33, 78, 112, .20)'; ctx.fillRect(x + 8, y + 10, cardW, cardH);
-    ctx.fillStyle = '#fff'; ctx.fillRect(x, y, cardW, cardH);
-    ctx.fillStyle = item.enabled ? lineTypeColor[item.type] : '#d9e0e4'; ctx.fillRect(x, y, cardW, titleH);
+    const y = Math.ceil(headerHeight) + 30 + index * (cardHeight + slotGap); const x = cardX; const imageY = y + titleHeight;
+    ctx.fillStyle = 'rgba(33, 78, 112, .20)'; ctx.fillRect(x + 8, y + 10, cardWidth, cardHeight);
+    ctx.fillStyle = '#fff'; ctx.fillRect(x, y, cardWidth, cardHeight);
+    ctx.fillStyle = item.enabled ? lineTypeColor[item.type] : '#d9e0e4'; ctx.fillRect(x, y, cardWidth, titleHeight);
     ctx.fillStyle = 'rgba(255,255,255,.48)'; ctx.beginPath(); ctx.arc(940, y + 52, 46, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(884, y + 52, 26, 0, Math.PI * 2); ctx.fill();
     const titleX = 480; const titleWidth = 760; const layout = fitTitle(ctx, item.title, titleWidth, item.titleFontSize);
     ctx.font = `800 ${layout.size}px ${font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 7; ctx.strokeStyle = '#fff'; ctx.lineJoin = 'round';
-    const lineHeight = layout.size * 1.08; const firstLineY = y + titleH / 2 - (layout.lines.length - 1) * lineHeight / 2;
+    const lineHeight = layout.size * 1.08; const firstLineY = y + titleHeight / 2 - (layout.lines.length - 1) * lineHeight / 2;
     layout.lines.forEach((line, lineIndex) => { const lineY = firstLineY + lineIndex * lineHeight; ctx.strokeText(line, titleX, lineY, titleWidth); ctx.fillStyle = '#1f2730'; ctx.fillText(line, titleX, lineY, titleWidth); });
-    ctx.save(); ctx.beginPath(); ctx.rect(x + 14, imageY + 14, cardW - 28, imageH); ctx.clip();
-    if (item.enabled && images[index]) drawCover(ctx, images[index]!, x + 14, imageY + 14, cardW - 28, imageH, item.scale, item.offsetX, item.offsetY);
-    else { ctx.fillStyle = '#edf2f4'; ctx.fillRect(x + 14, imageY + 14, cardW - 28, imageH); ctx.fillStyle = '#78909c'; ctx.font = `700 28px ${font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(item.enabled ? '画像を選択してください' : 'この投稿枠は使用しません', width / 2, imageY + 14 + imageH / 2); }
-    ctx.restore(); ctx.strokeStyle = '#dbe6eb'; ctx.lineWidth = 2; ctx.strokeRect(x + 14, imageY + 14, cardW - 28, imageH);
+    ctx.save(); ctx.beginPath(); ctx.rect(x + imageInset, imageY + imageInset, imageWidth, imageHeight); ctx.clip();
+    if (item.enabled && images[index]) drawCover(ctx, images[index]!, x + imageInset, imageY + imageInset, imageWidth, imageHeight, item.scale, item.offsetX, item.offsetY);
+    else { ctx.fillStyle = '#edf2f4'; ctx.fillRect(x + imageInset, imageY + imageInset, imageWidth, imageHeight); ctx.fillStyle = '#78909c'; ctx.font = `700 28px ${font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(item.enabled ? '画像を選択してください' : 'この投稿枠は使用しません', width / 2, imageY + imageInset + imageHeight / 2); }
+    ctx.restore(); ctx.strokeStyle = '#dbe6eb'; ctx.lineWidth = 2; ctx.strokeRect(x + imageInset, imageY + imageInset, imageWidth, imageHeight);
   });
 }
