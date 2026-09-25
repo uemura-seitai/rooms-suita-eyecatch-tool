@@ -4,29 +4,43 @@ export type OfficialLineItemType = 'radio' | 'health' | 'notice';
 export type OfficialLineSlot = { enabled: boolean; type: OfficialLineItemType; title: string; imageId?: string; uploadedImage?: string; scale: number; offsetX: number; offsetY: number; titleFontSize: number; linkUrl: string };
 export type OfficialLineState = { slots: OfficialLineSlot[] };
 
-export const LINE_CANVAS = { width: 1080, height: 2631 };
+export const LINE_CANVAS = { width: 1040, height: 1850 };
 export const lineTypeLabel: Record<OfficialLineItemType, string> = { radio: 'ラジオ', health: '健康情報', notice: 'お知らせ投稿' };
 export const lineTypeColor: Record<OfficialLineItemType, string> = { radio: '#f6b7c8', health: '#aee1ed', notice: '#f8df84' };
 const font = '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif';
-const cardX = 48;
-const cardWidth = 984;
-const imageInset = 14;
-const titleHeight = 116;
+const cardX = 32;
+const cardWidth = 976;
+const imageInset = 10;
+const titleHeight = 86;
 const imageWidth = cardWidth - imageInset * 2;
-// The source eye-catch images are 16:9. Keep this derived from the actual
-// painted width so an unedited 16:9 image receives no crop at scale 100%.
-const imageHeight = Math.round(imageWidth / 16 * 9);
+// This deliberately wider-than-16:9 window removes the repeated header and
+// empty edges found in site eye-catches while retaining their main content.
+const imageHeight = 332;
 const cardHeight = titleHeight + imageInset + imageHeight + imageInset;
-const slotGap = 24;
+const slotGap = 14;
+
+export const officialLineSlotDefaults: Record<OfficialLineItemType, Pick<OfficialLineSlot, 'scale' | 'offsetX' | 'offsetY' | 'titleFontSize'>> = {
+  // Radio eye-catches put the useful NEWS bar at their lower edge. The card
+  // title replaces the repeated source title, so this crop prioritizes the
+  // host portrait and the complete NEWS bar.
+  radio: { scale: 1, offsetX: 0, offsetY: -100, titleFontSize: 46 },
+  // Health and notice cards are balanced toward their photo/body area and
+  // trim the repeated source heading and surplus top whitespace.
+  health: { scale: 1, offsetX: 0, offsetY: -20, titleFontSize: 46 },
+  notice: { scale: 1, offsetX: 0, offsetY: -35, titleFontSize: 46 },
+};
 
 /**
  * `scale` is relative to the automatically calculated cover scale.  Therefore
  * 1 is not a fixed source-image size: each image is first scaled to fill its
  * own image area, then this value is applied as the user's zoom adjustment.
  */
-export const defaultImagePosition = () => ({ scale: 1, offsetX: 0, offsetY: 0 });
+export const defaultImagePosition = (type: OfficialLineItemType) => {
+  const { scale, offsetX, offsetY } = officialLineSlotDefaults[type];
+  return { scale, offsetX, offsetY };
+};
 
-const slot = (type: OfficialLineItemType, title: string): OfficialLineSlot => ({ enabled: true, type, title, ...defaultImagePosition(), titleFontSize: 46, linkUrl: '' });
+const slot = (type: OfficialLineItemType, title: string): OfficialLineSlot => ({ enabled: true, type, title, ...officialLineSlotDefaults[type], linkUrl: '' });
 export const defaultOfficialLineState = (): OfficialLineState => ({ slots: [slot('radio', 'ROOMsラジオ'), slot('health', '健康情報'), slot('notice', 'お知らせ投稿')] });
 
 function load(src: string) { return new Promise<HTMLImageElement>((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = src; }); }
@@ -87,12 +101,12 @@ export async function renderOfficialLine(canvas: HTMLCanvasElement, state: Offic
   const imagePromises = state.slots.map((item) => item.enabled && item.uploadedImage ? load(item.uploadedImage).catch(() => undefined) : Promise.resolve(undefined));
   const images = await Promise.all(imagePromises);
   state.slots.forEach((item, index) => {
-    const y = Math.ceil(headerHeight) + 30 + index * (cardHeight + slotGap); const x = cardX; const imageY = y + titleHeight;
+    const y = Math.ceil(headerHeight) + 16 + index * (cardHeight + slotGap); const x = cardX; const imageY = y + titleHeight;
     ctx.fillStyle = 'rgba(33, 78, 112, .20)'; ctx.fillRect(x + 8, y + 10, cardWidth, cardHeight);
     ctx.fillStyle = '#fff'; ctx.fillRect(x, y, cardWidth, cardHeight);
     ctx.fillStyle = item.enabled ? lineTypeColor[item.type] : '#d9e0e4'; ctx.fillRect(x, y, cardWidth, titleHeight);
-    ctx.fillStyle = 'rgba(255,255,255,.48)'; ctx.beginPath(); ctx.arc(940, y + 52, 46, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(884, y + 52, 26, 0, Math.PI * 2); ctx.fill();
-    const titleX = 480; const titleWidth = 760; const layout = fitTitle(ctx, item.title, titleWidth, item.titleFontSize);
+    ctx.fillStyle = 'rgba(255,255,255,.48)'; ctx.beginPath(); ctx.arc(900, y + 43, 38, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(852, y + 43, 21, 0, Math.PI * 2); ctx.fill();
+    const titleX = 470; const titleWidth = 760; const layout = fitTitle(ctx, item.title, titleWidth, item.titleFontSize);
     ctx.font = `800 ${layout.size}px ${font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 7; ctx.strokeStyle = '#fff'; ctx.lineJoin = 'round';
     const lineHeight = layout.size * 1.08; const firstLineY = y + titleHeight / 2 - (layout.lines.length - 1) * lineHeight / 2;
     layout.lines.forEach((line, lineIndex) => { const lineY = firstLineY + lineIndex * lineHeight; ctx.strokeText(line, titleX, lineY, titleWidth); ctx.fillStyle = '#1f2730'; ctx.fillText(line, titleX, lineY, titleWidth); });

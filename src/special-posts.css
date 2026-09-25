@@ -44,7 +44,7 @@ canvas { aspect-ratio: auto; }
 .line-position button { min-height: 38px; padding: 5px 10px; color: #276e99; border-color: #a9d4e6; font-size: 13px; }
 .line-links { display: grid; gap: 10px; }
 .line-links a { display: grid; place-items: center; min-height: 48px; border: 1px solid #3c8fbb; border-radius: 10px; background: #5aabd0; color: #fff; font-weight: 700; text-decoration: none; }
-.official-line-preview canvas { aspect-ratio: 1080 / 2631; background: #5aabd0; }
+.official-line-preview canvas { aspect-ratio: 1040 / 1850; background: #5aabd0; }
 .line-reset { display: block; width: 100%; margin-bottom: 12px; }
 .line-library-backdrop { position: fixed; z-index: 20; inset: 0; display: grid; align-items: end; background: rgba(21, 43, 60, .45); }
 .line-library { max-height: 82vh; overflow: auto; padding: 18px; border-radius: 18px 18px 0 0; background: #fff; }
