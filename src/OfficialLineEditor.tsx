@@ -1,6 +1,6 @@
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { blobToDataUrl, listLibraryImages, type LibraryImage } from './utils/imageLibrary';
-import { defaultOfficialLineState, lineTypeColor, lineTypeLabel, renderOfficialLine, type OfficialLineItemType, type OfficialLineSlot, type OfficialLineState } from './utils/officialLineCanvas';
+import { defaultImagePosition, defaultOfficialLineState, lineTypeColor, lineTypeLabel, renderOfficialLine, type OfficialLineItemType, type OfficialLineSlot, type OfficialLineState } from './utils/officialLineCanvas';
 import headerNews from './assets/official-line/header-news.png';
 
 type LibraryPreview = LibraryImage & { src: string };
@@ -27,10 +27,10 @@ export default function OfficialLineEditor({ resetToken, onClear }: Props) {
   const updateSlot = (index: number, next: Partial<OfficialLineSlot>) => setState((current) => ({ ...current, slots: current.slots.map((slot, slotIndex) => slotIndex === index ? { ...slot, ...next } : slot) }));
   const uploadImage = async (index: number, event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]; if (!file) return;
-    try { updateSlot(index, { uploadedImage: await blobToDataUrl(file), imageId: undefined }); } catch { setStatus('画像を読み込めませんでした。JPEG、PNG、WebPでお試しください。'); }
+    try { updateSlot(index, { uploadedImage: await blobToDataUrl(file), imageId: undefined, ...defaultImagePosition() }); } catch { setStatus('画像を読み込めませんでした。JPEG、PNG、WebPでお試しください。'); }
     event.target.value = '';
   };
-  const pickLibrary = (index: number, image: LibraryPreview) => { updateSlot(index, { uploadedImage: image.src, imageId: image.id, type: image.postType === 'radio' || image.postType === 'health' || image.postType === 'notice' ? image.postType : state.slots[index].type }); setLibraryOpenFor(null); };
+  const pickLibrary = (index: number, image: LibraryPreview) => { updateSlot(index, { uploadedImage: image.src, imageId: image.id, type: image.postType === 'radio' || image.postType === 'health' || image.postType === 'notice' ? image.postType : state.slots[index].type, ...defaultImagePosition() }); setLibraryOpenFor(null); };
   const copyLinks = async () => {
     const text = state.slots.map((slot, index) => `投稿${index + 1}\n${slot.title}\n${slot.linkUrl}`).join('\n');
     try { await navigator.clipboard.writeText(text); } catch { const area = document.createElement('textarea'); area.value = text; document.body.append(area); area.select(); document.execCommand('copy'); area.remove(); }
@@ -50,9 +50,10 @@ export default function OfficialLineEditor({ resetToken, onClear }: Props) {
       <label className="toggle"><input type="checkbox" checked={slot.enabled} onChange={(e) => updateSlot(index, { enabled: e.target.checked })} /> この投稿枠を使用する</label>
       <div className="official-line-type"><label>投稿種別<select value={slot.type} onChange={(e) => updateSlot(index, { type: e.target.value as OfficialLineItemType })}>{(Object.keys(lineTypeLabel) as OfficialLineItemType[]).map((item) => <option value={item} key={item}>{lineTypeLabel[item]}</option>)}</select></label><span className="line-color-chip" style={{ background: lineTypeColor[slot.type] }}>{lineTypeLabel[slot.type]}：{slot.type === 'radio' ? 'ピンク' : slot.type === 'health' ? '水色' : '黄色'}</span></div>
       <label>見出しタイトル<input value={slot.title} onChange={(e) => updateSlot(index, { title: e.target.value })} /></label>
+      <label className="line-title-size">タイトル文字サイズ <output>{slot.titleFontSize}px</output><div><input type="range" min="28" max="56" step="1" value={slot.titleFontSize} onChange={(e) => updateSlot(index, { titleFontSize: Number(e.target.value) })} /><input type="number" min="28" max="56" value={slot.titleFontSize} onChange={(e) => updateSlot(index, { titleFontSize: Math.min(56, Math.max(28, Number(e.target.value) || 28)) })} aria-label="タイトル文字サイズ（px）" /></div></label>
       <div className="line-image-actions"><button onClick={() => { setLibraryOpenFor(index); void refreshLibrary(); }}>ライブラリから画像を選択</button><label className="upload">画像をアップロード<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void uploadImage(index, event)} /></label></div>
       {slot.uploadedImage && <img className="line-selected-image" src={slot.uploadedImage} alt={`投稿枠${index + 1}の選択画像`} />}
-      <fieldset className="line-position"><legend>画像位置調整</legend><label>拡大率 <output>{Math.round(slot.scale * 100)}%</output><input type="range" min="0.7" max="2" step="0.01" value={slot.scale} onChange={(e) => updateSlot(index, { scale: Number(e.target.value) })} /></label><label>左右 <output>{slot.offsetX > 0 ? '+' : ''}{slot.offsetX}</output><input type="range" min="-100" max="100" value={slot.offsetX} onChange={(e) => updateSlot(index, { offsetX: Number(e.target.value) })} /></label><label>上下 <output>{slot.offsetY > 0 ? '+' : ''}{slot.offsetY}</output><input type="range" min="-100" max="100" value={slot.offsetY} onChange={(e) => updateSlot(index, { offsetY: Number(e.target.value) })} /></label><button onClick={() => updateSlot(index, { scale: 1, offsetX: 0, offsetY: 0 })}>初期位置に戻す</button></fieldset>
+      <fieldset className="line-position"><legend>画像位置調整</legend><p className="hint">画像選択時は、画像ごとに自動計算したcover表示を中央に配置します。</p><label>拡大率 <output>{Math.round(slot.scale * 100)}%</output><input type="range" min="0.7" max="2" step="0.01" value={slot.scale} onChange={(e) => updateSlot(index, { scale: Number(e.target.value) })} /></label><label>左右 <output>{slot.offsetX > 0 ? '+' : ''}{slot.offsetX}</output><input type="range" min="-100" max="100" value={slot.offsetX} onChange={(e) => updateSlot(index, { offsetX: Number(e.target.value) })} /></label><label>上下 <output>{slot.offsetY > 0 ? '+' : ''}{slot.offsetY}</output><input type="range" min="-100" max="100" value={slot.offsetY} onChange={(e) => updateSlot(index, { offsetY: Number(e.target.value) })} /></label><button onClick={() => updateSlot(index, defaultImagePosition())}>初期位置に戻す</button></fieldset>
       <label>リンクURL<input type="url" inputMode="url" value={slot.linkUrl} onChange={(e) => updateSlot(index, { linkUrl: e.target.value })} placeholder="https://" /></label>
     </section>)}
     <section className="card line-links"><h2>リンク設定用</h2><button onClick={() => void copyLinks()}>リンク一覧をコピー</button><a href="https://manager.line.biz/" target="_blank" rel="noreferrer">公式LINEを開く</a></section>

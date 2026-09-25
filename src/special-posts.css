@@ -23,6 +23,11 @@ canvas { aspect-ratio: auto; }
 .instagram-image-preview { display: block; width: min(180px, 100%); max-height: 140px; object-fit: cover; border-radius: 8px; border: 1px solid #e7b2c3; }
 .library-save { width: 100%; min-height: 48px; background: #eef8fb; border-color: #91cbe2; color: #276e99; }
 .official-line-header label, .official-line-slot > label { display: block; margin: 12px 0; font-size: 14px; font-weight: 600; }
+.line-title-size { display: block; margin: 12px 0; font-size: 14px; font-weight: 600; }
+.line-title-size output { float: right; color: #276e99; font-weight: 700; }
+.line-title-size > div { display: grid; grid-template-columns: 1fr 82px; align-items: center; gap: 10px; margin-top: 6px; }
+.line-title-size input[type="range"] { margin: 0; }
+.line-title-size input[type="number"] { margin: 0; text-align: center; }
 .official-line-fixed-header img { display: block; width: 100%; height: auto; border-radius: 7px; }
 .official-line-fixed-header .hint { margin-top: 10px; }
 .official-line-type { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 10px; margin: 12px 0; }
@@ -33,6 +38,7 @@ canvas { aspect-ratio: auto; }
 .line-selected-image { display: block; width: 100%; max-height: 150px; object-fit: cover; border-radius: 9px; border: 1px solid #d8e4e8; margin: 10px 0; }
 .line-position { border: 1px solid #d8e4e8; border-radius: 10px; padding: 10px 12px 12px; margin: 15px 0; }
 .line-position legend { padding: 0 5px; color: #276e99; font-size: 14px; font-weight: 700; }
+.line-position .hint { margin: 0 0 8px; font-size: 12px; }
 .line-position label { display: block; margin: 10px 0; font-size: 13px; }
 .line-position output { float: right; color: #276e99; font-weight: 700; }
 .line-position button { min-height: 38px; padding: 5px 10px; color: #276e99; border-color: #a9d4e6; font-size: 13px; }
