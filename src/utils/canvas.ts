@@ -74,13 +74,19 @@ export async function render(canvas: HTMLCanvasElement, template: Template, valu
     let second = layoutText(ctx, values.text2, textWidth, values.text2Style.size, 24, 3, values.text2Style);
     const gap = values.text1 && values.text2 ? 18 : 0;
     for (let shrink = 0; first.height + second.height + gap > template.titleBox.height && shrink <= 68; shrink += 2) { first = layoutText(ctx, values.text1, textWidth, Math.max(24, values.text1Style.size - shrink), 24, 3, values.text1Style); second = layoutText(ctx, values.text2, textWidth, Math.max(24, values.text2Style.size - shrink), 24, 3, values.text2Style); }
-    const groupHeight = first.height + second.height + gap; const groupY = template.titleBox.y + (template.titleBox.height - groupHeight) / 2 + values.verticalOffset; const textX = template.titleBox.x + textPadding;
-    if (values.text1) drawNoticeLines(ctx, first, textX + values.text1Style.offsetX, groupY + values.text1Style.offsetY, values.text1Style);
-    if (values.text2) drawNoticeLines(ctx, second, textX + values.text2Style.offsetX, groupY + first.height + gap + values.text2Style.offsetY, values.text2Style);
+    const groupHeight = first.height + second.height + gap;
+    const groupY = template.titleBox.y + (template.titleBox.height - groupHeight) / 2 + values.verticalOffset;
+    const leftAlignedX = template.titleBox.x + textPadding;
+    const text1X = leftAlignedX + values.text1Style.offsetX;
+    const text2X = leftAlignedX + values.text2Style.offsetX;
+    if (values.text1) drawNoticeLines(ctx, first, text1X, groupY + values.text1Style.offsetY, values.text1Style);
+    if (values.text2) drawNoticeLines(ctx, second, text2X, groupY + first.height + gap + values.text2Style.offsetY, values.text2Style);
   } else if (template.type === 'health') {
     const titleBox = values.uploaded && template.imageBox ? { ...template.titleBox, width: Math.min(template.titleBox.width, template.imageBox.x - template.titleBox.x - 24) } : template.titleBox;
-    const layout = layoutText(ctx, values.text1, titleBox.width, values.text1Style.size, 24, template.title.maxLines, values.text1Style); const y = titleBox.y + (titleBox.height - layout.height) / 2 + values.verticalOffset;
-    drawLines(ctx, layout, titleBox.x + values.text1Style.offsetX, y + values.text1Style.offsetY, values.text1Style, 'left');
+    const layout = layoutText(ctx, values.text1, titleBox.width, values.text1Style.size, 24, template.title.maxLines, values.text1Style);
+    const titleX = titleBox.x + values.text1Style.offsetX;
+    const titleY = titleBox.y + (titleBox.height - layout.height) / 2 + values.verticalOffset + values.text1Style.offsetY;
+    drawLines(ctx, layout, titleX, titleY, values.text1Style, 'left');
   }
   if (template.type === 'health') { ctx.font = `500 32px ${fontFamily}`; ctx.textAlign = 'left'; if (values.subtitle && template.subtitleBox) ctx.fillText(values.subtitle, template.subtitleBox.x, template.subtitleBox.y, template.subtitleBox.width); const tags = [values.tag1, values.tag2].map((tag) => tag.trim()).filter(Boolean).map((tag) => `#${tag.replace(/^#/, '')}`).join('　　'); if (tags) { ctx.fillStyle = '#333333'; ctx.font = `700 36px ${fontFamily}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(tags, canvas.width / 2, 550); ctx.textBaseline = 'alphabetic'; } if (template.labelBox && values.label) { ctx.fillStyle = '#333333'; ctx.font = `700 29px ${fontFamily}`; ctx.textAlign = 'left'; ctx.fillText(values.label, template.labelBox.x, template.labelBox.y, template.labelBox.width); } }
   if (template.type === 'roomsRadio' || template.type === 'lineRich' || template.type === 'standFm') {
