@@ -59,13 +59,16 @@ export async function render(canvas: HTMLCanvasElement, template: Template, valu
   if (template.type === 'health') { ctx.save(); const band = ctx.getImageData(20, 550, 1, 1).data; ctx.fillStyle = `rgb(${band[0]},${band[1]},${band[2]})`; ctx.fillRect(0, 515, 1040, 70); (template.placeholderBoxes ?? []).forEach((b) => { const pixel = ctx.getImageData(b.x + 8, b.y + 8, 1, 1).data; ctx.fillStyle = `rgb(${pixel[0]},${pixel[1]},${pixel[2]})`; ctx.fillRect(b.x, b.y, b.width, b.height); }); ctx.restore(); }
   if (template.imageBox && values.uploaded) drawImageContain(ctx, values.uploaded, template.imageBox);
   if (template.type === 'notice') {
-    // The two notice texts are fitted together, then drawn from one exact centre X coordinate.
+    // Text 1 remains centred. Text 2 has its own inset so its wrapped lines
+    // share a consistent, readable left edge in both the preview and export.
+    const text2Padding = 16;
+    const text2Width = template.titleBox.width - text2Padding;
     let first = layoutText(ctx, values.text1, template.titleBox.width, values.text1Style.size, 24, 3, values.text1Style);
-    let second = layoutText(ctx, values.text2, template.titleBox.width, values.text2Style.size, 24, 3, values.text2Style);
+    let second = layoutText(ctx, values.text2, text2Width, values.text2Style.size, 24, 3, values.text2Style);
     const gap = values.text1 && values.text2 ? 18 : 0;
-    for (let shrink = 0; first.height + second.height + gap > template.titleBox.height && shrink <= 68; shrink += 2) { first = layoutText(ctx, values.text1, template.titleBox.width, Math.max(24, values.text1Style.size - shrink), 24, 3, values.text1Style); second = layoutText(ctx, values.text2, template.titleBox.width, Math.max(24, values.text2Style.size - shrink), 24, 3, values.text2Style); }
+    for (let shrink = 0; first.height + second.height + gap > template.titleBox.height && shrink <= 68; shrink += 2) { first = layoutText(ctx, values.text1, template.titleBox.width, Math.max(24, values.text1Style.size - shrink), 24, 3, values.text1Style); second = layoutText(ctx, values.text2, text2Width, Math.max(24, values.text2Style.size - shrink), 24, 3, values.text2Style); }
     const groupHeight = first.height + second.height + gap; const groupY = template.titleBox.y + (template.titleBox.height - groupHeight) / 2 + values.verticalOffset; const centerX = template.titleBox.x + template.titleBox.width / 2;
-    if (values.text1) drawLines(ctx, first, centerX, groupY, values.text1Style, 'center'); if (values.text2) drawLines(ctx, second, centerX, groupY + first.height + gap, values.text2Style, 'center');
+    if (values.text1) drawLines(ctx, first, centerX, groupY, values.text1Style, 'center'); if (values.text2) drawLines(ctx, second, template.titleBox.x + text2Padding, groupY + first.height + gap, values.text2Style, 'left');
   } else if (template.type === 'health') {
     const titleBox = values.uploaded && template.imageBox ? { ...template.titleBox, width: Math.min(template.titleBox.width, template.imageBox.x - template.titleBox.x - 24) } : template.titleBox;
     const layout = layoutText(ctx, values.text1, titleBox.width, values.text1Style.size, 24, template.title.maxLines, values.text1Style); const y = titleBox.y + (titleBox.height - layout.height) / 2 + values.verticalOffset;
