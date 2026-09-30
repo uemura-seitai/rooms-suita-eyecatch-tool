@@ -44,6 +44,13 @@ function layoutSpecialTitle(ctx: CanvasRenderingContext2D, text: string, box: Bo
 function drawLines(ctx: CanvasRenderingContext2D, layout: ReturnType<typeof layoutText>, x: number, y: number, style: TextStyle, align: CanvasTextAlign) {
   ctx.font = `${style.weight} ${layout.size}px ${style.family || fontFamily}`; ctx.fillStyle = style.color; ctx.textAlign = align; ctx.textBaseline = 'top'; layout.lines.forEach((line, i) => ctx.fillText(line, x, y + i * layout.size * layout.lineHeight));
 }
+function drawNoticeLines(ctx: CanvasRenderingContext2D, layout: ReturnType<typeof layoutText>, x: number, y: number, style: TextStyle) {
+  ctx.font = `${style.weight} ${layout.size}px ${style.family || fontFamily}`;
+  ctx.fillStyle = style.color;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  layout.lines.forEach((line, i) => ctx.fillText(line, x, y + i * layout.size * layout.lineHeight));
+}
 function drawOutlinedLines(ctx: CanvasRenderingContext2D, layout: ReturnType<typeof layoutText>, x: number, y: number, style: TextStyle, align: CanvasTextAlign) {
   ctx.font = `${style.weight} ${layout.size}px ${style.family || fontFamily}`; ctx.textAlign = align; ctx.textBaseline = 'top';
   const colors = (style as SpecialTextStyle).lineColors;
@@ -68,7 +75,8 @@ export async function render(canvas: HTMLCanvasElement, template: Template, valu
     const gap = values.text1 && values.text2 ? 18 : 0;
     for (let shrink = 0; first.height + second.height + gap > template.titleBox.height && shrink <= 68; shrink += 2) { first = layoutText(ctx, values.text1, textWidth, Math.max(24, values.text1Style.size - shrink), 24, 3, values.text1Style); second = layoutText(ctx, values.text2, textWidth, Math.max(24, values.text2Style.size - shrink), 24, 3, values.text2Style); }
     const groupHeight = first.height + second.height + gap; const groupY = template.titleBox.y + (template.titleBox.height - groupHeight) / 2 + values.verticalOffset; const textX = template.titleBox.x + textPadding;
-    if (values.text1) drawLines(ctx, first, textX, groupY, values.text1Style, 'left'); if (values.text2) drawLines(ctx, second, textX, groupY + first.height + gap, values.text2Style, 'left');
+    if (values.text1) drawNoticeLines(ctx, first, textX, groupY, values.text1Style);
+    if (values.text2) drawNoticeLines(ctx, second, textX, groupY + first.height + gap, values.text2Style);
   } else if (template.type === 'health') {
     const titleBox = values.uploaded && template.imageBox ? { ...template.titleBox, width: Math.min(template.titleBox.width, template.imageBox.x - template.titleBox.x - 24) } : template.titleBox;
     const layout = layoutText(ctx, values.text1, titleBox.width, values.text1Style.size, 24, template.title.maxLines, values.text1Style); const y = titleBox.y + (titleBox.height - layout.height) / 2 + values.verticalOffset;
