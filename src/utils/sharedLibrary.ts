@@ -12,10 +12,10 @@ export function getSharedLibraryUrl() {
   return '';
 }
 export function setSharedLibraryUrl(value: string) { localStorage.setItem(SHARED_LIBRARY_URL_KEY, value.trim().replace(/\/$/, '')); }
-function baseUrl() { const value = getSharedLibraryUrl(); if (!value) throw new Error('共有ライブラリURLを設定してください。'); return value; }
+function baseUrl() { const value = getSharedLibraryUrl(); if (!value) throw new Error('共有ライブラリに接続できません。Mac側の共有サーバーが起動している時のみ利用できます。'); return value; }
 async function request(path: string, init?: RequestInit) {
   let response: Response;
-  try { response = await fetch(`${baseUrl()}${path}`, init); } catch { throw new Error('共有ライブラリに接続できません。Mac側の共有サーバーを起動してください。'); }
+  try { response = await fetch(`${baseUrl()}${path}`, init); } catch { throw new Error('共有ライブラリに接続できません。Mac側の共有サーバーが起動している時のみ利用できます。'); }
   if (!response.ok) { const detail = await response.json().catch(() => ({})); throw new Error(detail.error || '共有ライブラリの操作に失敗しました。'); }
   return response;
 }

@@ -13,7 +13,7 @@ const dateFilePart = () => new Date().toLocaleString('sv-SE', { timeZone: 'Asia/
 export default function OfficialLineEditor({ resetToken, onClear }: Props) {
   const [state, setState] = useState<OfficialLineState>(defaultOfficialLineState);
   const [library, setLibrary] = useState<LibraryPreview[]>([]);
-  const [libraryTab, setLibraryTab] = useState<'local' | 'shared'>('local');
+  const [libraryTab, setLibraryTab] = useState<'local' | 'shared'>('shared');
   const [libraryOpenFor, setLibraryOpenFor] = useState<number | null>(null);
   const [status, setStatus] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -66,6 +66,6 @@ export default function OfficialLineEditor({ resetToken, onClear }: Props) {
     <button className="create" onClick={() => void download()}>公式LINE用画像を作成</button>
     <button className="clear-inputs" onClick={() => { setState(defaultOfficialLineState()); onClear(); }}>入力内容をすべてクリア</button>
     <button className="reset-text-settings line-reset" onClick={() => setState(defaultOfficialLineState())}>初期設定に戻す</button>
-    {libraryOpenFor !== null && <div className="line-library-backdrop" role="dialog" aria-modal="true" aria-label="画像ライブラリ"><div className="line-library"><div><h2>画像ライブラリ</h2><button className="line-library-close" onClick={() => setLibraryOpenFor(null)}>閉じる</button></div><div className="library-tabs"><button className={libraryTab === 'local' ? 'selected' : ''} onClick={() => { setLibraryTab('local'); void refreshLibrary('local'); }}>この端末</button><button className={libraryTab === 'shared' ? 'selected' : ''} onClick={() => { setLibraryTab('shared'); void refreshLibrary('shared'); }}>共有ライブラリ</button></div>{library.length ? <div className="line-library-grid">{library.map((image) => <button key={`${image.library}:${image.id}`} onClick={() => pickLibrary(libraryOpenFor, image)}><img src={image.src} alt="" /><strong>{image.title || '無題の画像'}</strong><small>{lineTypeLabel[image.postType as OfficialLineItemType] || 'その他'}</small></button>)}</div> : <p className="hint">{libraryTab === 'shared' ? '共有ライブラリに画像がないか、Mac側の共有サーバーに接続できません。共有ライブラリURLとサーバー起動を確認してください。' : '保存済み画像はありません。通常投稿の完成後に「この端末のライブラリに保存」を押すとここから選べます。'}</p>}</div></div>}
+    {libraryOpenFor !== null && <div className="line-library-backdrop" role="dialog" aria-modal="true" aria-label="画像ライブラリ"><div className="line-library"><div><h2>画像ライブラリ</h2><button className="line-library-close" onClick={() => setLibraryOpenFor(null)}>閉じる</button></div><div className="library-tabs"><button className={libraryTab === 'shared' ? 'selected' : ''} onClick={() => { setLibraryTab('shared'); void refreshLibrary('shared'); }}>共有ライブラリ</button><button className={libraryTab === 'local' ? 'selected' : ''} onClick={() => { setLibraryTab('local'); void refreshLibrary('local'); }}>この端末</button></div>{library.length ? <div className="line-library-grid">{library.map((image) => <button key={`${image.library}:${image.id}`} onClick={() => pickLibrary(libraryOpenFor, image)}><img src={image.src} alt="" /><strong>{image.title || '無題の画像'}</strong><small>{lineTypeLabel[image.postType as OfficialLineItemType] || 'その他'}</small></button>)}</div> : <p className="hint">{libraryTab === 'shared' ? '共有ライブラリに画像がないか、Mac側の共有サーバーに接続できません。共有ライブラリURLとサーバー起動を確認してください。' : 'この端末に保存済みの画像はありません。既存の端末内画像はここから選択できます。'}</p>}</div></div>}
   </>;
 }
