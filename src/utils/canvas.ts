@@ -4,9 +4,9 @@ const fontFamily = '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Yu
 export type TextStyle = { size: number; family: string; color: string; weight: 400 | 500 | 600 | 700 | 800 | 900; offsetX: number; offsetY: number };
 export type SpecialTextStyle = TextStyle & { offsetX: number; offsetY: number; lineColors?: [string, string, string] };
 export const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = src; });
-export function drawImageContain(ctx: CanvasRenderingContext2D, image: CanvasImageSource, box: Box, imageScale = 1) {
+export function drawImageContain(ctx: CanvasRenderingContext2D, image: CanvasImageSource, box: Box, imageScale = 1, offsetX = 0, offsetY = 0) {
   const source = image as HTMLImageElement; const scale = Math.min(box.width / source.naturalWidth, box.height / source.naturalHeight) * imageScale; const width = source.naturalWidth * scale; const height = source.naturalHeight * scale;
-  ctx.drawImage(source, box.x + (box.width - width) / 2, box.y + (box.height - height) / 2, width, height);
+  ctx.drawImage(source, box.x + (box.width - width) / 2 + offsetX, box.y + (box.height - height) / 2 + offsetY, width, height);
 }
 function linesFor(ctx: CanvasRenderingContext2D, text: string, width: number) {
   return text.split('\n').flatMap((part) => { const chars = [...part]; const lines: string[] = []; let line = ''; chars.forEach((char) => { if (ctx.measureText(line + char).width > width && line) { lines.push(line); line = char; } else line += char; }); lines.push(line); return lines; });
@@ -60,11 +60,11 @@ function drawTitleLines(ctx: CanvasRenderingContext2D, layout: ReturnType<typeof
   ctx.font = `${style.weight} ${layout.size}px ${style.family || fontFamily}`; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   layout.lines.forEach((line, i) => { ctx.fillStyle = style.lineColors?.[i] || style.color; ctx.fillText(line, x, y + i * layout.size * layout.lineHeight); });
 }
-export async function render(canvas: HTMLCanvasElement, template: Template, values: { text1: string; text2: string; subtitle: string; tag1: string; tag2: string; label: string; number: string; newsText: string; showNews: boolean; text1Style: TextStyle; text2Style: TextStyle; specialStyles: { number: SpecialTextStyle; subtitle: SpecialTextStyle; title: SpecialTextStyle; news: SpecialTextStyle }; verticalOffset: number; imageScale: number; uploaded?: HTMLImageElement }) {
+export async function render(canvas: HTMLCanvasElement, template: Template, values: { text1: string; text2: string; subtitle: string; tag1: string; tag2: string; label: string; number: string; newsText: string; showNews: boolean; text1Style: TextStyle; text2Style: TextStyle; specialStyles: { number: SpecialTextStyle; subtitle: SpecialTextStyle; title: SpecialTextStyle; news: SpecialTextStyle }; verticalOffset: number; imageScale: number; imageOffsetX: number; imageOffsetY: number; uploaded?: HTMLImageElement }) {
   canvas.width = template.canvas.width; canvas.height = template.canvas.height; const ctx = canvas.getContext('2d')!; const bg = await loadImage(template.asset); ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
   // Remove the template's hashtag placeholders before drawing only the user's tags.
   if (template.type === 'health') { ctx.save(); const band = ctx.getImageData(20, 550, 1, 1).data; ctx.fillStyle = `rgb(${band[0]},${band[1]},${band[2]})`; ctx.fillRect(0, 515, 1040, 70); (template.placeholderBoxes ?? []).forEach((b) => { const pixel = ctx.getImageData(b.x + 8, b.y + 8, 1, 1).data; ctx.fillStyle = `rgb(${pixel[0]},${pixel[1]},${pixel[2]})`; ctx.fillRect(b.x, b.y, b.width, b.height); }); ctx.restore(); }
-  if (template.imageBox && values.uploaded) drawImageContain(ctx, values.uploaded, template.imageBox, values.imageScale);
+  if (template.imageBox && values.uploaded) drawImageContain(ctx, values.uploaded, template.imageBox, values.imageScale, values.imageOffsetX, values.imageOffsetY);
   if (template.type === 'notice') {
     // Both notice texts use the same inset so their wrapped lines share a
     // consistent, readable left edge in both the preview and export.
