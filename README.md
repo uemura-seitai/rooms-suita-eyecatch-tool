@@ -7,6 +7,10 @@ npm install
 npm run dev
 ```
 
+## 通常利用（GitHub Pages）
+
+普段は `https://uemura-seitai.github.io/rooms-suita-eyecatch-tool/` を開きます。Macが起動していなくても、画像作成、スマホのカメラロール保存、ファイル保存、WordPress投稿を利用できます。共有ライブラリだけはMac共有版専用の任意機能です。
+
 ## 同じWi-Fiで共有ライブラリを使う
 
 Macを親機にして、iPhone/iPad/PCで同じ画像ライブラリを使うときは、Macで次を実行します。
@@ -22,7 +26,7 @@ Viteアプリ（ポート5173）と共有ライブラリAPI（ポート8787）�
 
 ローカル起動URLから開いた場合、共有ライブラリURLは同じMacの `:8787` を自動で使います。GitHub Pagesなどから開く場合は、画面の「共有ライブラリ設定」に `http://192.168.1.20:8787` を入力してください。ただしHTTPSのGitHub PagesからHTTPのMac APIへはブラウザの混在コンテンツ制限で接続できないことがあるため、共有時は上記のローカル起動URLを使ってください。
 
-完成画像では「この端末のライブラリに保存」と「共有ライブラリに保存」を選べます。公式LINEの「ライブラリから画像を選択」では「この端末」「共有ライブラリ」を切り替えられます。共有データはMacの `shared-library-data/images/`（画像本体）と `shared-library-data/library.json`（メタデータ）に保存され、Macでサーバーを止めても端末内ライブラリは引き続き使えます。
+local-share版では、通常の保存・WordPress投稿に加えて共有ライブラリを利用できます。完成後はスマホで「カメラロールに保存」「ファイルに保存」「共有ライブラリに保存」「WordPressに投稿」、PCで「ファイルに保存」「共有ライブラリに保存」「WordPressに投稿」を利用できます。公式LINEの画像選択は共有ライブラリを優先し、「この端末」タブは既存のIndexedDB画像との互換用です。共有データはMacの `shared-library-data/images/`（画像本体）と `shared-library-data/library.json`（メタデータ）に保存されます。
 
 ### Macログイン時に自動起動する
 
