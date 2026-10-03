@@ -22,6 +22,9 @@ canvas { aspect-ratio: auto; }
 .instagram-caption p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .instagram-image-preview { display: block; width: min(180px, 100%); max-height: 140px; object-fit: cover; border-radius: 8px; border: 1px solid #e7b2c3; }
 .library-save { width: 100%; min-height: 48px; background: #eef8fb; border-color: #91cbe2; color: #276e99; }
+.shared-library-save { width: 100%; min-height: 48px; background: #f3eefb; border-color: #bba6df; color: #65448e; }
+.shared-library-settings label { display: block; font-size: 14px; font-weight: 600; }
+.shared-library-settings .hint { margin-top: 9px; }
 .official-line-header label, .official-line-slot > label { display: block; margin: 12px 0; font-size: 14px; font-weight: 600; }
 .line-title-size { display: block; margin: 12px 0; font-size: 14px; font-weight: 600; }
 .line-title-size output { float: right; color: #276e99; font-weight: 700; }
@@ -51,6 +54,8 @@ canvas { aspect-ratio: auto; }
 .line-library > div:first-child { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
 .line-library h2 { margin: 0 0 12px; }
 .line-library-close { min-height: 38px; padding: 5px 10px; }
+.library-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 13px; }
+.library-tabs button.selected { background: #f9dfe7; border-color: #e69ab1; color: #9c3557; }
 .line-library-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .line-library-grid button { min-height: 0; padding: 5px; text-align: left; font-size: 12px; overflow: hidden; }
 .line-library-grid img { display: block; width: 100%; aspect-ratio: 1.5; object-fit: cover; margin-bottom: 5px; border-radius: 5px; }

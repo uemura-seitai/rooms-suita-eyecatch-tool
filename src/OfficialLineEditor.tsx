@@ -1,9 +1,10 @@
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { blobToDataUrl, listLibraryImages, type LibraryImage } from './utils/imageLibrary';
+import { getSharedLibraryImageBlob, listSharedLibraryImages, type SharedLibraryImage } from './utils/sharedLibrary';
 import { defaultImagePosition, defaultOfficialLineState, lineTypeColor, lineTypeLabel, renderOfficialLine, type OfficialLineItemType, type OfficialLineSlot, type OfficialLineState } from './utils/officialLineCanvas';
 import headerNews from './assets/official-line/header-news.png';
 
-type LibraryPreview = LibraryImage & { src: string };
+type LibraryPreview = (LibraryImage | SharedLibraryImage) & { src: string; library: 'local' | 'shared' };
 type Props = { resetToken: number; onClear: () => void };
 
 const typeForLibrary: Record<OfficialLineItemType, LibraryImage['postType']> = { radio: 'radio', health: 'health', notice: 'notice' };
@@ -12,13 +13,16 @@ const dateFilePart = () => new Date().toLocaleString('sv-SE', { timeZone: 'Asia/
 export default function OfficialLineEditor({ resetToken, onClear }: Props) {
   const [state, setState] = useState<OfficialLineState>(defaultOfficialLineState);
   const [library, setLibrary] = useState<LibraryPreview[]>([]);
+  const [libraryTab, setLibraryTab] = useState<'local' | 'shared'>('local');
   const [libraryOpenFor, setLibraryOpenFor] = useState<number | null>(null);
   const [status, setStatus] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const refreshLibrary = async () => {
-    try { setLibrary((await Promise.all((await listLibraryImages()).map(async (image) => ({ ...image, src: await blobToDataUrl(image.image) })))).slice(0, 30)); }
-    catch { setStatus('画像ライブラリを読み込めませんでした。'); }
+  const refreshLibrary = async (tab = libraryTab) => {
+    try {
+      if (tab === 'local') setLibrary((await Promise.all((await listLibraryImages()).map(async (image) => ({ ...image, library: 'local' as const, src: await blobToDataUrl(image.image) })))).slice(0, 30));
+      else setLibrary((await Promise.all((await listSharedLibraryImages()).map(async (image) => ({ ...image, library: 'shared' as const, src: await blobToDataUrl(await getSharedLibraryImageBlob(image.id)) })))).slice(0, 30));
+    } catch (caught) { setLibrary([]); setStatus(caught instanceof Error ? caught.message : '画像ライブラリを読み込めませんでした。'); }
   };
   useEffect(() => { void refreshLibrary(); }, []);
   useEffect(() => { if (!canvasRef.current) return; void renderOfficialLine(canvasRef.current, state).catch(() => setStatus('プレビュー画像を描画できませんでした。')); }, [state]);
@@ -62,6 +66,6 @@ export default function OfficialLineEditor({ resetToken, onClear }: Props) {
     <button className="create" onClick={() => void download()}>公式LINE用画像を作成</button>
     <button className="clear-inputs" onClick={() => { setState(defaultOfficialLineState()); onClear(); }}>入力内容をすべてクリア</button>
     <button className="reset-text-settings line-reset" onClick={() => setState(defaultOfficialLineState())}>初期設定に戻す</button>
-    {libraryOpenFor !== null && <div className="line-library-backdrop" role="dialog" aria-modal="true" aria-label="画像ライブラリ"><div className="line-library"><div><h2>画像ライブラリ</h2><button className="line-library-close" onClick={() => setLibraryOpenFor(null)}>閉じる</button></div>{library.length ? <div className="line-library-grid">{library.map((image) => <button key={image.id} onClick={() => pickLibrary(libraryOpenFor, image)}><img src={image.src} alt="" /><strong>{image.title || '無題の画像'}</strong><small>{lineTypeLabel[image.postType as OfficialLineItemType] || 'その他'}</small></button>)}</div> : <p className="hint">保存済み画像はありません。通常投稿の完成後に「画像ライブラリに保存」を押すとここから選べます。</p>}</div></div>}
+    {libraryOpenFor !== null && <div className="line-library-backdrop" role="dialog" aria-modal="true" aria-label="画像ライブラリ"><div className="line-library"><div><h2>画像ライブラリ</h2><button className="line-library-close" onClick={() => setLibraryOpenFor(null)}>閉じる</button></div><div className="library-tabs"><button className={libraryTab === 'local' ? 'selected' : ''} onClick={() => { setLibraryTab('local'); void refreshLibrary('local'); }}>この端末</button><button className={libraryTab === 'shared' ? 'selected' : ''} onClick={() => { setLibraryTab('shared'); void refreshLibrary('shared'); }}>共有ライブラリ</button></div>{library.length ? <div className="line-library-grid">{library.map((image) => <button key={`${image.library}:${image.id}`} onClick={() => pickLibrary(libraryOpenFor, image)}><img src={image.src} alt="" /><strong>{image.title || '無題の画像'}</strong><small>{lineTypeLabel[image.postType as OfficialLineItemType] || 'その他'}</small></button>)}</div> : <p className="hint">{libraryTab === 'shared' ? '共有ライブラリに画像がないか、Mac側の共有サーバーに接続できません。共有ライブラリURLとサーバー起動を確認してください。' : '保存済み画像はありません。通常投稿の完成後に「この端末のライブラリに保存」を押すとここから選べます。'}</p>}</div></div>}
   </>;
 }

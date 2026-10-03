@@ -7,3 +7,4 @@ dist/
 worker/.dev.vars
 worker/node_modules/
 worker/dist/
+shared-library-data/
