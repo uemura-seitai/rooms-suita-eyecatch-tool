@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.rooms.suita-eyecatch-local-share</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/uemuranaoya/rooms-suita-eyecatch-tool/scripts/start-local-share.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/uemuranaoya/rooms-suita-eyecatch-tool</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>ROOMS_LAUNCHD</key>
+    <string>1</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>StandardOutPath</key>
+  <string>/Users/uemuranaoya/Library/Logs/rooms-local-share.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/uemuranaoya/Library/Logs/rooms-local-share-error.log</string>
+</dict>
+</plist>

@@ -24,6 +24,43 @@ Viteアプリ（ポート5173）と共有ライブラリAPI（ポート8787）�
 
 完成画像では「この端末のライブラリに保存」と「共有ライブラリに保存」を選べます。公式LINEの「ライブラリから画像を選択」では「この端末」「共有ライブラリ」を切り替えられます。共有データはMacの `shared-library-data/images/`（画像本体）と `shared-library-data/library.json`（メタデータ）に保存され、Macでサーバーを止めても端末内ライブラリは引き続き使えます。
 
+### Macログイン時に自動起動する
+
+このMacではNode/npmの実体パスが `/usr/local/bin/node`、`/usr/local/bin/npm` です。LaunchAgent用の起動スクリプトはこの絶対パスを使うため、ログイン時にもnvm等のシェル設定に依存しません。
+
+初回または設定変更後に、Macで次を一度だけ実行します。
+
+```bash
+cd /Users/uemuranaoya/rooms-suita-eyecatch-tool
+chmod +x scripts/start-local-share.sh scripts/install-launch-agent.sh
+./scripts/install-launch-agent.sh
+```
+
+これにより `com.rooms.suita-eyecatch-local-share` が `~/Library/LaunchAgents/` に登録され、次回以降のログイン時に `npm run local-share` と同じ共有API・Viteアプリが起動します。起動済みなら手動の `npm run local-share` は安全に終了し、別アプリが5173または8787を使用中の場合は停止させずエラーにします。手動起動が先に動いていた場合も、LaunchAgentは手動プロセス終了後に自動で再試行します。
+
+停止、再開、状態・ログの確認:
+
+```bash
+# 自動起動を停止
+launchctl bootout gui/$(id -u)/com.rooms.suita-eyecatch-local-share
+
+# 再開（設定ファイルは作り直し不要）
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.rooms.suita-eyecatch-local-share.plist
+launchctl kickstart -k gui/$(id -u)/com.rooms.suita-eyecatch-local-share
+
+# LaunchAgent・ポート・HTTP応答を確認
+launchctl print gui/$(id -u)/com.rooms.suita-eyecatch-local-share
+lsof -nP -iTCP:5173 -sTCP:LISTEN
+lsof -nP -iTCP:8787 -sTCP:LISTEN
+curl http://localhost:8787/api/images
+
+# ログを確認
+tail -f ~/Library/Logs/rooms-local-share.log
+tail -f ~/Library/Logs/rooms-local-share-error.log
+```
+
+スマホ用の現在のURLは、起動ログにViteが出す `Network:` 行を確認してください。手早く確認する場合は、Wi-Fi接続中に `ipconfig getifaddr en0` を実行し、`http://表示されたIP:5173/rooms-suita-eyecatch-tool/` を開きます。共有APIは `http://表示されたIP:8787/api/images` です。IPは固定ではないため、コードには保存していません。
+
 ## テンプレート配置
 
 正式ZIPから展開したPNGはすでに以下の場所へ配置済みです。テンプレートの絵柄はアプリ側で一切描き直しません。将来テンプレートを差し替える際は、対応表どおりにリネームして同じ場所へ配置してください。
