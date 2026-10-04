@@ -1,7 +1,6 @@
 import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 
-const command = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const execFileAsync = promisify(execFile);
 const projectDirectory = process.cwd();
 
@@ -22,7 +21,7 @@ async function listenerWorkingDirectory(pid) {
   }
 }
 async function ensurePortsAreAvailable() {
-  for (const port of [5173, 8787]) {
+  for (const port of [8787]) {
     const pids = await listenerPids(port);
     if (!pids.length) continue;
     const directories = await Promise.all(pids.map(listenerWorkingDirectory));
@@ -40,7 +39,11 @@ async function ensurePortsAreAvailable() {
 }
 
 if (!await ensurePortsAreAvailable()) process.exit();
+// The everyday entry point is GitHub Pages, so local-share only needs the
+// LAN HTTPS API. `npm run dev` remains available for development.
+const certificateSetup = spawn('/bin/bash', ['scripts/ensure-local-https.sh'], { stdio: 'inherit' });
+await new Promise((resolve) => certificateSetup.on('exit', resolve));
+if (certificateSetup.exitCode !== 0) process.exit(certificateSetup.exitCode || 1);
 const api = spawn(process.execPath, ['shared-library-server/server.mjs'], { stdio: 'inherit' });
-const vite = spawn(command, ['run', 'dev', '--', '--host', '0.0.0.0'], { stdio: 'inherit' });
-const stop = () => { api.kill(); vite.kill(); };
+const stop = () => { api.kill(); };
 process.on('SIGINT', stop); process.on('SIGTERM', stop);

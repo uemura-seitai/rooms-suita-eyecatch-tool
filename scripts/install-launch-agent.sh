@@ -5,10 +5,12 @@ set -euo pipefail
 LABEL="com.rooms.suita-eyecatch-local-share"
 PROJECT_DIR="/Users/uemuranaoya/rooms-suita-eyecatch-tool"
 SOURCE="$PROJECT_DIR/launchd/$LABEL.plist"
-TARGET="$HOME/Library/LaunchAgents/$LABEL.plist"
-USER_ID="$(id -u)"
+OWNER_USER="$(/usr/bin/stat -f%Su "$PROJECT_DIR")"
+OWNER_HOME="$(/usr/bin/dscl . -read "/Users/$OWNER_USER" NFSHomeDirectory | /usr/bin/awk '{print $2}')"
+TARGET="$OWNER_HOME/Library/LaunchAgents/$LABEL.plist"
+USER_ID="$(/usr/bin/id -u "$OWNER_USER")"
 
-mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs"
+mkdir -p "$OWNER_HOME/Library/LaunchAgents" "$OWNER_HOME/Library/Logs"
 /usr/bin/install -m 644 "$SOURCE" "$TARGET"
 
 # A missing prior registration is normal. Only this exact label is removed.

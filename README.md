@@ -13,20 +13,38 @@ npm run dev
 
 ## 同じWi-Fiで共有ライブラリを使う
 
-Macを親機にして、iPhone/iPad/PCで同じ画像ライブラリを使うときは、Macで次を実行します。
+普段使う入口は常に次の一つです。ローカル版URLやIPアドレスを開く必要はありません。
+
+`https://uemura-seitai.github.io/rooms-suita-eyecatch-tool/`
+
+共有APIは、このMacのBonjour名を使う次のLAN内HTTPS URLです。
+
+`https://uemuranaoyanoMacBook-Pro.local:8787`
+
+Wi-FiのIPアドレスが変わってもURLは変わりません。画像本体とメタデータは引き続きMac内の `shared-library-data/` にだけ保存されます。
+
+### 初回のみ：MacのHTTPS証明書を準備する
+
+Macで次を一度だけ実行します。ローカルCAとサーバー証明書は `.local-certs/` に生成され、Git管理されません。秘密鍵は外部へ送信されません。
 
 ```bash
-npm run local-share
+cd /Users/uemuranaoya/rooms-suita-eyecatch-tool
+chmod +x scripts/ensure-local-https.sh scripts/setup-local-https.sh scripts/start-local-share.sh scripts/install-launch-agent.sh
+npm run setup-local-https
 ```
 
-Viteアプリ（ポート5173）と共有ライブラリAPI（ポート8787）が同時に起動します。ターミナルに表示される `Network` URL をスマホで開いてください。通常は以下のようになります（`192.168.1.20` はMacの実際のIPアドレスに置き換わります）。
+`setup-local-https` はMacのログインキーチェーンにこのローカルCAを信頼済みとして追加します。管理者確認が表示された場合は許可してください。
 
-- Mac: `http://localhost:5173/rooms-suita-eyecatch-tool/`
-- スマホ・同じWi-Fi内のPC: `http://192.168.1.20:5173/rooms-suita-eyecatch-tool/`
+### 初回のみ：iPhone/iPadでローカルCAを信頼する
 
-ローカル起動URLから開いた場合、共有ライブラリURLは同じMacの `:8787` を自動で使います。GitHub Pagesなどから開く場合は、画面の「共有ライブラリ設定」に `http://192.168.1.20:8787` を入力してください。ただしHTTPSのGitHub PagesからHTTPのMac APIへはブラウザの混在コンテンツ制限で接続できないことがあるため、共有時は上記のローカル起動URLを使ってください。
+1. Macの `.local-certs/rooms-local-ca-cert.cer` をAirDrop、メール添付などでiPhone/iPadへ送ります（公開鍵のみです）。
+2. iPhone/iPadでファイルを開き、表示されるプロファイルをダウンロードします。
+3. **設定** → **一般** → **VPNとデバイス管理**（または「プロファイルがダウンロード済み」）からプロファイルをインストールします。
+4. **設定** → **一般** → **情報** → **証明書信頼設定** を開き、「ROOMs Shared Library Local CA」をオンにして信頼します。
 
-local-share版では、通常の保存・WordPress投稿に加えて共有ライブラリを利用できます。完成後はスマホで「カメラロールに保存」「ファイルに保存」「共有ライブラリに保存」「WordPressに投稿」、PCで「ファイルに保存」「共有ライブラリに保存」「WordPressに投稿」を利用できます。公式LINEの画像選択は共有ライブラリを優先し、「この端末」タブは既存のIndexedDB画像との互換用です。共有データはMacの `shared-library-data/images/`（画像本体）と `shared-library-data/library.json`（メタデータ）に保存されます。
+同じWi-Fi上で、GitHub Pagesの画面に「共有ライブラリ：利用可能」と表示されれば設定完了です。MacがOFFまたは別ネットワークの場合は「Mac起動時のみ利用できます」と表示され、通常機能はそのまま使えます。
+
+公式LINEは共有ライブラリに依存しません。MacがOFFでも「画像をアップロード」から投稿枠1〜3を作成して1040×1850px PNGを出力できます。MacがONの時だけ「ライブラリから画像を選択」→「共有ライブラリ」が追加で利用できます。
 
 ### Macログイン時に自動起動する
 
@@ -40,7 +58,7 @@ chmod +x scripts/start-local-share.sh scripts/install-launch-agent.sh
 ./scripts/install-launch-agent.sh
 ```
 
-これにより `com.rooms.suita-eyecatch-local-share` が `~/Library/LaunchAgents/` に登録され、次回以降のログイン時に `npm run local-share` と同じ共有API・Viteアプリが起動します。起動済みなら手動の `npm run local-share` は安全に終了し、別アプリが5173または8787を使用中の場合は停止させずエラーにします。手動起動が先に動いていた場合も、LaunchAgentは手動プロセス終了後に自動で再試行します。
+これにより `com.rooms.suita-eyecatch-local-share` が `~/Library/LaunchAgents/` に登録され、次回以降のログイン時に `npm run local-share` と同じHTTPS共有APIが起動します。GitHub Pagesを使うため、Viteのローカル公開は不要です。起動済みなら手動の `npm run local-share` は安全に終了し、別アプリが8787を使用中の場合は停止させずエラーにします。手動起動が先に動いていた場合も、LaunchAgentは手動プロセス終了後に自動で再試行します。
 
 停止、再開、状態・ログの確認:
 
@@ -52,18 +70,17 @@ launchctl bootout gui/$(id -u)/com.rooms.suita-eyecatch-local-share
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.rooms.suita-eyecatch-local-share.plist
 launchctl kickstart -k gui/$(id -u)/com.rooms.suita-eyecatch-local-share
 
-# LaunchAgent・ポート・HTTP応答を確認
+# LaunchAgent・ポート・HTTPS応答を確認
 launchctl print gui/$(id -u)/com.rooms.suita-eyecatch-local-share
-lsof -nP -iTCP:5173 -sTCP:LISTEN
 lsof -nP -iTCP:8787 -sTCP:LISTEN
-curl http://localhost:8787/api/images
+curl --cacert .local-certs/rooms-local-ca-cert.pem https://uemuranaoyanoMacBook-Pro.local:8787/api/health
 
 # ログを確認
 tail -f ~/Library/Logs/rooms-local-share.log
 tail -f ~/Library/Logs/rooms-local-share-error.log
 ```
 
-スマホ用の現在のURLは、起動ログにViteが出す `Network:` 行を確認してください。手早く確認する場合は、Wi-Fi接続中に `ipconfig getifaddr en0` を実行し、`http://表示されたIP:5173/rooms-suita-eyecatch-tool/` を開きます。共有APIは `http://表示されたIP:8787/api/images` です。IPは固定ではないため、コードには保存していません。
+LaunchAgentは `.local-certs/` が未作成の場合も証明書を生成してからAPIを起動します。ただしiPhone/iPadのCA信頼は上記の初回設定が必要です。
 
 ## テンプレート配置
 
