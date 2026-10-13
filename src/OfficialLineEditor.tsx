@@ -3,6 +3,7 @@ import { blobToDataUrl, listLibraryImages, type LibraryImage } from './utils/ima
 import { getSharedLibraryImageBlob, listSharedLibraryImages, type SharedLibraryImage } from './utils/sharedLibrary';
 import { defaultImagePosition, defaultOfficialLineState, lineTypeColor, lineTypeLabel, renderOfficialLine, type OfficialLineItemType, type OfficialLineSlot, type OfficialLineState } from './utils/officialLineCanvas';
 import headerNews from './assets/official-line/header-news.png';
+import FixedPreview from './FixedPreview';
 
 type LibraryPreview = (LibraryImage | SharedLibraryImage) & { src: string; library: 'local' | 'shared' };
 type Props = { resetToken: number; onClear: () => void };
@@ -62,7 +63,7 @@ export default function OfficialLineEditor({ resetToken, onClear }: Props) {
       <label>リンクURL<input type="url" inputMode="url" value={slot.linkUrl} onChange={(e) => updateSlot(index, { linkUrl: e.target.value })} placeholder="https://" /></label>
     </section>)}
     <section className="card line-links"><h2>リンク設定用</h2><button onClick={() => void copyLinks()}>リンク一覧をコピー</button><a href="https://manager.line.biz/" target="_blank" rel="noreferrer">公式LINEを開く</a></section>
-    <section className={`fixed-preview official-line-preview${previewExpanded ? ' is-expanded' : ''}`} aria-label="公式LINE プレビュー"><button className="fixed-preview-toggle" onClick={() => setPreviewExpanded((current) => !current)} aria-expanded={previewExpanded}>公式LINE プレビュー <span aria-hidden="true">{previewExpanded ? '▲' : '▼'}</span></button><div className="fixed-preview-content"><canvas ref={canvasRef} aria-label="公式LINE配信用画像のプレビュー" /></div></section>
+    <FixedPreview label="公式LINE プレビュー" expanded={previewExpanded} onToggle={() => setPreviewExpanded((current) => !current)}><canvas ref={canvasRef} aria-label="公式LINE配信用画像のプレビュー" /></FixedPreview>
     {status && <p className="clear-status" role="status">{status}</p>}
     <button className="create" onClick={() => void download()}>公式LINE用画像を作成</button>
     <button className="clear-inputs" onClick={() => { setState(defaultOfficialLineState()); onClear(); }}>入力内容をすべてクリア</button>

@@ -49,7 +49,7 @@ canvas { aspect-ratio: auto; }
 .line-links a { display: grid; place-items: center; min-height: 48px; border: 1px solid #3c8fbb; border-radius: 10px; background: #5aabd0; color: #fff; font-weight: 700; text-decoration: none; }
 .official-line-preview canvas { aspect-ratio: 1040 / 1850; background: #5aabd0; }
 .line-reset { display: block; width: 100%; margin-bottom: 12px; }
-.line-library-backdrop { position: fixed; z-index: 20; inset: 0; display: grid; align-items: end; background: rgba(21, 43, 60, .45); }
+.line-library-backdrop { position: fixed; z-index: 10000; inset: 0; display: grid; align-items: end; background: rgba(21, 43, 60, .45); }
 .line-library { max-height: 82vh; overflow: auto; padding: 18px; border-radius: 18px 18px 0 0; background: #fff; }
 .line-library > div:first-child { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
 .line-library h2 { margin: 0 0 12px; }
