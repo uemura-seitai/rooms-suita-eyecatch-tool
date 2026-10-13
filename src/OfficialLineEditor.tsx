@@ -15,6 +15,7 @@ export default function OfficialLineEditor({ resetToken, onClear }: Props) {
   const [library, setLibrary] = useState<LibraryPreview[]>([]);
   const [libraryTab, setLibraryTab] = useState<'local' | 'shared'>('shared');
   const [libraryOpenFor, setLibraryOpenFor] = useState<number | null>(null);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
   const [status, setStatus] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -61,7 +62,7 @@ export default function OfficialLineEditor({ resetToken, onClear }: Props) {
       <label>リンクURL<input type="url" inputMode="url" value={slot.linkUrl} onChange={(e) => updateSlot(index, { linkUrl: e.target.value })} placeholder="https://" /></label>
     </section>)}
     <section className="card line-links"><h2>リンク設定用</h2><button onClick={() => void copyLinks()}>リンク一覧をコピー</button><a href="https://manager.line.biz/" target="_blank" rel="noreferrer">公式LINEを開く</a></section>
-    <section className="card preview-card official-line-preview"><h2>公式LINE プレビュー</h2><canvas ref={canvasRef} aria-label="公式LINE配信用画像のプレビュー" /></section>
+    <section className={`fixed-preview official-line-preview${previewExpanded ? ' is-expanded' : ''}`} aria-label="公式LINE プレビュー"><button className="fixed-preview-toggle" onClick={() => setPreviewExpanded((current) => !current)} aria-expanded={previewExpanded}>公式LINE プレビュー <span aria-hidden="true">{previewExpanded ? '▲' : '▼'}</span></button><div className="fixed-preview-content"><canvas ref={canvasRef} aria-label="公式LINE配信用画像のプレビュー" /></div></section>
     {status && <p className="clear-status" role="status">{status}</p>}
     <button className="create" onClick={() => void download()}>公式LINE用画像を作成</button>
     <button className="clear-inputs" onClick={() => { setState(defaultOfficialLineState()); onClear(); }}>入力内容をすべてクリア</button>
