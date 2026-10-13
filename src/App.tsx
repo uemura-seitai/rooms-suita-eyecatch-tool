@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getTemplate, getTemplates, type PostType } from './config/templateConfig';
 import { createChatGptPrompt, type PromptRequestType } from './utils/chatgptPrompt';
 import { render, type SpecialTextStyle, type TextStyle } from './utils/canvas';
@@ -29,6 +29,66 @@ const dateString = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asi
 const CHATGPT_CHAT_URL = 'https://chatgpt.com/c/6aaa81d5-feb0-83e8-81d2-cd22707f4501';
 const WORDPRESS_DRAFT_URL = 'https://member-uemura-seitai.com/wp-admin/edit.php?post_status=draft&post_type=post';
 const WORDPRESS_CHROME_URL = 'googlechromes://member-uemura-seitai.com/wp-admin/edit.php?post_status=draft&post_type=post';
+
+const SHOP_NAME_MAX_FONT_SIZE = 16;
+const SHOP_NAME_MIN_FONT_SIZE = 13;
+
+// Use the browser's Japanese word segmentation when a name genuinely needs two
+// lines. This keeps compounds such as "音楽教室" and "おすすめレシピ" together
+// instead of relying on character-count wrapping.
+const shopNameParts = (name: string) => {
+  const Segmenter = (Intl as typeof Intl & { Segmenter?: new (locale: string, options: { granularity: 'word' }) => { segment: (value: string) => Iterable<{ segment: string }> } }).Segmenter;
+  if (!Segmenter) return [name];
+  const parts = Array.from(new Segmenter('ja', { granularity: 'word' }).segment(name), ({ segment }) => segment).filter(Boolean);
+  return parts.length > 1 ? parts : [name];
+};
+
+const splitShopName = (name: string) => {
+  const parts = shopNameParts(name);
+  if (parts.length < 2) return [name];
+  const widths = parts.map((part) => Array.from(part).reduce((total, character) => total + (/[\x00-\x7f]/.test(character) ? 0.55 : 1), 0));
+  const half = widths.reduce((total, width) => total + width, 0) / 2;
+  let running = 0;
+  let splitAt = 1;
+  for (let index = 1; index < parts.length; index += 1) {
+    running += widths[index - 1];
+    if (Math.abs(half - running) <= Math.abs(half - (running + widths[index]))) splitAt = index;
+  }
+  return [parts.slice(0, splitAt).join(''), parts.slice(splitAt).join('')];
+};
+
+function ShopName({ name }: { name: string }) {
+  const labelRef = useRef<HTMLSpanElement>(null);
+  const [fontSize, setFontSize] = useState(SHOP_NAME_MAX_FONT_SIZE);
+  const [twoLines, setTwoLines] = useState(false);
+
+  useLayoutEffect(() => {
+    const label = labelRef.current;
+    if (!label) return;
+    const fit = () => {
+      const button = label.parentElement;
+      if (!button) return;
+      const buttonStyles = window.getComputedStyle(button);
+      const availableWidth = button.clientWidth - parseFloat(buttonStyles.paddingLeft) - parseFloat(buttonStyles.paddingRight);
+      if (!availableWidth) return;
+      const context = document.createElement('canvas').getContext('2d');
+      if (!context) return;
+      const styles = window.getComputedStyle(label);
+      context.font = `${styles.fontWeight} ${SHOP_NAME_MAX_FONT_SIZE}px ${styles.fontFamily}`;
+      const naturalWidth = context.measureText(name).width;
+      const fittedSize = Math.min(SHOP_NAME_MAX_FONT_SIZE, Math.floor((availableWidth / naturalWidth) * SHOP_NAME_MAX_FONT_SIZE * 10) / 10);
+      setFontSize(Math.max(SHOP_NAME_MIN_FONT_SIZE, fittedSize));
+      setTwoLines(fittedSize < SHOP_NAME_MIN_FONT_SIZE);
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(label.parentElement!);
+    return () => observer.disconnect();
+  }, [name]);
+
+  const lines = twoLines ? splitShopName(name) : [name];
+  return <span ref={labelRef} className={`shop-name${twoLines ? ' shop-name--two-lines' : ''}`} style={{ fontSize: `${fontSize}px` }}>{lines.map((line, index) => <span key={index}>{line}</span>)}</span>;
+}
 
 async function makeSafeImage(file: File): Promise<HTMLImageElement> {
   let source: Blob = file;
@@ -76,7 +136,7 @@ export default function App() {
   return <main><header><h1>ROOMs吹田 アイキャッチ作成</h1><p>画像は端末内だけで処理されます。</p></header>
     <section className="card"><h2><span>1</span> 投稿タイプ</h2><select className="post-type-select" value={type} onChange={(e) => { const next = e.target.value as PostType | ''; if (next) selectType(next); }}><option value="">投稿タイプを選択してください</option>{POST_TYPE_OPTIONS.map((option) => <option value={option.id} key={option.id}>{option.label}</option>)}</select></section>{sharedLibraryStatus}
     {type === 'notice' && <section className="card instagram-import"><h2>Instagram投稿URL</h2><label className="instagram-url-label">Instagram投稿URL<input type="url" inputMode="url" value={instagramUrl} onChange={(e) => { setInstagramUrl(e.target.value); setInstagramError(''); }} placeholder="https://www.instagram.com/p/xxxxxxxx/" /></label><button className="instagram-load" onClick={loadInstagramPost} disabled={instagramLoading}>{instagramLoading ? 'Instagram投稿を読み込んでいます…' : 'Instagram投稿を読み込む'}</button>{instagramError && <p className="instagram-error" role="alert">{instagramError}</p>}{instagramImageWarning && <p className="instagram-error" role="alert">{instagramImageWarning}</p>}{instagramPost && <div className="instagram-result" role="status"><strong>{instagramPost.shopId ? 'Instagram投稿を読み込みました' : 'Instagram投稿URLを確認しました'}</strong>{instagramPost.shopId && <p>加盟店：{getTemplates('notice').find((item) => item.id === instagramPost.shopId)?.shop || instagramPost.shopId}</p>}<p>投稿タイプ：{instagramPost.mediaType === 'reel' || instagramPost.mediaType === 'REELS' ? 'リール' : instagramPost.mediaType === 'CAROUSEL_ALBUM' ? 'カルーセル' : instagramPost.mediaType === 'VIDEO' ? '動画' : '画像'}</p><p>投稿ID：{instagramPost.shortcode}</p>{normalizedInstagramUrl && <p className="instagram-normalized">確認URL：{normalizedInstagramUrl}</p>}{instagramPost.caption && <details className="instagram-caption"><summary>Instagram投稿本文</summary><p>{instagramPost.caption}</p></details>}{instagramPost.caption?.split(/\r?\n/).find(Boolean) && <p>タイトル候補：{instagramPost.caption.split(/\r?\n/).find(Boolean)}</p>}{upload && <><p>使用画像：</p><img className="instagram-image-preview" src={upload.src} alt="Instagram投稿から読み込んだ画像" /></>}<p>{instagramPost.shopId ? 'この内容を使用' : '投稿内容の自動取得機能は現在準備中です。加盟店・タイトル・画像は下の入力欄で確認してください。'}</p>{!import.meta.env.VITE_INSTAGRAM_API_URL && <p className="instagram-api-note">Instagram自動取得機能はまだ設定されていません</p>}</div>}</section>}
-    {type && !isSpecialType && <section className="card"><h2><span>2</span> 加盟店</h2><div className="choices shops">{getTemplates(type).map((item) => <button key={item.id} className={shop === item.id ? 'selected' : ''} onClick={() => { setShop(item.id); setError(''); }}>{item.shop}</button>)}</div></section>}
+    {type && !isSpecialType && <section className="card"><h2><span>2</span> 加盟店</h2><div className="choices shops">{getTemplates(type).map((item) => <button key={item.id} className={shop === item.id ? 'selected' : ''} onClick={() => { setShop(item.id); setError(''); }}><ShopName name={item.shop} /></button>)}</div></section>}
     {isSpecialType && <><section className="card"><h2><span>2</span> 回数番号</h2><input inputMode="numeric" value={values.number} onChange={(e) => updateNumber(e.target.value.replace(/[^0-9]/g, ''))} placeholder="例：340" /></section><section className="card"><h2><span>3</span> 上部小見出し</h2><input value={values.subtitle} onChange={(e) => setValues({ ...values, subtitle: e.target.value })} placeholder="例：《自律神経ダイエット7つのルール⑤》" /></section><section className="card"><h2><span>4</span> メインタイトル</h2><textarea value={values.text1} onChange={(e) => setValues({ ...values, text1: e.target.value })} placeholder="例：呼吸の仕方" rows={3} /></section>{isRadioType && <section className="card"><h2><span>5</span> NEWS帯</h2><label className="toggle"><input type="checkbox" checked={values.showNews} onChange={(e) => setValues({ ...values, showNews: e.target.checked })} /> NEWSを表示する</label>{values.showNews && <input value={values.newsText} onChange={(e) => setValues({ ...values, newsText: e.target.value })} placeholder="例：シルバーウィークも診療します" />}</section>}</>}
     {isSpecialType && <section className="card"><button className="details" onClick={() => setTextSettings(!textSettings)} aria-expanded={textSettings}>文字設定（任意） <b>{textSettings ? '−' : '+'}</b></button>{textSettings && <div className="advanced text-settings">{specialStyleControls(type === 'standFm' ? '回数' : '回数＋ROOMsラジオ', 'number', 24, 72)}{specialStyleControls('上部小見出し', 'subtitle', 20, 72)}{titleStyleControls()}{isRadioType && specialStyleControls('NEWS本文', 'news', 24, 90)}<button className="reset-text-settings" onClick={() => setSpecialStyles(defaultSpecialStyles(type))}>初期設定に戻す</button></div>}</section>}
     {type && !isSpecialType && <><section className="card"><h2><span>3</span> {type === 'health' ? 'タイトル' : 'テキスト1'}</h2><textarea value={values.text1} onChange={(e) => setValues({ ...values, text1: e.target.value })} placeholder={type === 'health' ? '例：高血圧と\n自律神経の関係' : '例：商品ポイント'} rows={3} /></section>{type !== 'health' && <section className="card"><h2><span>4</span> テキスト2</h2><textarea value={values.text2} onChange={(e) => setValues({ ...values, text2: e.target.value })} placeholder={'例：カードが\nできました'} rows={3} /></section>}</>}
