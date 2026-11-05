@@ -9,7 +9,9 @@ type Type = 'instagram_story_1' | 'instagram_story_2' | 'instagram_story_3' | 'i
 const base = `${import.meta.env.BASE_URL}templates/instagram/`;
 const postUrl = 'https://www.instagram.com/uemura_seitai_seccotsu?cplk=dnhoaTluaDluMjhy&utm_source=qr';
 const day = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' }).replace(/-/g, '');
-const defaults = () => ({ date: new Date().toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', weekday: 'short' }), am: '空きあり', pm: '空きあり', night: '残り少し', guide: '来週がほとんど空きなしなので\nご予約は今日か明日でお願いします！', person: '50代女性', theme: '姿勢', question: '夏に食べたい食材は\n次のうちどれ？', one: '赤い食べ物', two: '黒い食べ物', stamp1: '🔥', stamp2: '👏' });
+// Defaults must be genuinely blank. Sample copy used here previously came
+// back immediately after clear because reset reused this factory.
+const defaults = () => ({ date: '', am: '', pm: '', night: '', guide: '', person: '', theme: '', question: '', one: '', two: '', stamp1: '', stamp2: '' });
 type StoryValues = ReturnType<typeof defaults>;
 type StoryTextStyle = { size: number; family: string; color: string; weight: number; offsetX: number; offsetY: number };
 type StoryTextKey = 'date' | 'am' | 'pm' | 'night' | 'guide' | 'person' | 'theme' | 'before' | 'after' | 'question' | 'one' | 'two';
@@ -43,12 +45,26 @@ export default function InstagramStoryEditor({ type, onClear }: { type: Type; on
       setValues(defaults()); setTextStyles(initialTextStyles()); setOpenTextSettings(undefined);
       setPicked(undefined); setLabel(''); setScale(1); setOffsetX(0); setOffsetY(0);
       setBefore(emptyImageSettings()); setAfter(emptyImageSettings()); setPicker(false); setPickerTarget('image');
-      setExpanded(false); setPreviewVisible(false); setPreviewKey((current) => current + 1);
+      setExpanded(false); setPreviewVisible(true); setPreviewKey((current) => current + 1);
       setDone(false); setRendering(false); setStatus('');
     };
     window.addEventListener('rooms:preview-cleared', clearPreviewState);
     return () => window.removeEventListener('rooms:preview-cleared', clearPreviewState);
   }, []);
+  useEffect(() => {
+    // The vacancy controls have no empty option in the published design.
+    // Keep their visual selection empty whenever their controlled value is
+    // empty, rather than letting the browser display its first sample option.
+    if (type !== 'instagram_story_1') return;
+    document.querySelectorAll<HTMLSelectElement>('.instagram-story-card select').forEach((select) => {
+      if (!select.querySelector('option[data-empty-option]')) {
+        const option = document.createElement('option');
+        option.value = ''; option.textContent = ''; option.dataset.emptyOption = 'true';
+        select.prepend(option);
+      }
+      if (!select.value) select.value = '';
+    });
+  }, [type, values.am, values.pm, values.night]);
   const drawReservation = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
