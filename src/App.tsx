@@ -17,6 +17,13 @@ const POST_TYPE_OPTIONS: { id: PostType; label: string }[] = [
   { id: 'instagram_story_1', label: 'Instagramに投稿①（予約空き情報）' }, { id: 'instagram_story_2', label: 'Instagramに投稿②（クイズ）' }, { id: 'instagram_story_3', label: 'Instagramに投稿③（ブログ更新）' }, { id: 'instagram_story_4', label: 'Instagramに投稿④（ROOMs投稿）' },
 ];
 const LAST_RADIO_NUMBER_KEY = 'rooms:last-standfm-number';
+// A clear is intentionally scoped to the currently selected creation screen.
+// The stand fm episode number is the only value that survives a clear; it is
+// needed as the starting number for the next stand fm image.
+const emptyValues = (postType: PostType | ''): Values => ({
+  ...initial,
+  number: postType === 'standFm' ? localStorage.getItem(LAST_RADIO_NUMBER_KEY) || '' : '',
+});
 const defaultStyle = (size: number): TextStyle => ({ size, family: FONT_OPTIONS[0].value, color: '#333333', weight: 700, offsetX: 0, offsetY: 0 });
 const defaultTextStyles = (postType: PostType | '') => ({
   text1: defaultStyle(postType === 'health' ? 80 : postType === 'notice' ? 50 : 44),
@@ -103,7 +110,7 @@ async function makeSafeImage(file: File): Promise<HTMLImageElement> {
 
 export default function App() {
   const [type, setType] = useState<PostType | ''>('');
-  const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [previewExpanded, setPreviewExpanded] = useState(false); const [previewResetKey, setPreviewResetKey] = useState(0);
   const [shop, setShop] = useState('');
   const [values, setValues] = useState<Values>(initial); const [text1Style, setText1Style] = useState<TextStyle>(() => defaultTextStyles(type).text1); const [text2Style, setText2Style] = useState<TextStyle>(() => defaultTextStyles(type).text2); const [specialStyles, setSpecialStyles] = useState<SpecialStyles>(() => defaultSpecialStyles(type)); const [verticalOffset, setVerticalOffset] = useState(0); const [imageScale, setImageScale] = useState(1); const [imageOffsetX, setImageOffsetX] = useState(0); const [imageOffsetY, setImageOffsetY] = useState(0); const [upload, setUpload] = useState<HTMLImageElement>(); const [uploadName, setUploadName] = useState(''); const [error, setError] = useState(''); const [advanced, setAdvanced] = useState(false); const [textSettings, setTextSettings] = useState(false); const [ready, setReady] = useState(false); const [generated, setGenerated] = useState(false); const [shareDone, setShareDone] = useState(false); const [sharing, setSharing] = useState(false);
   const [chatOpen, setChatOpen] = useState(false); const [requestType, setRequestType] = useState<PromptRequestType>('post'); const [additionalInstructions, setAdditionalInstructions] = useState(''); const [chatPrompt, setChatPrompt] = useState(''); const [chatStatus, setChatStatus] = useState(''); const [clearMessage, setClearMessage] = useState(''); const [instagramUrl, setInstagramUrl] = useState(''); const [normalizedInstagramUrl, setNormalizedInstagramUrl] = useState(''); const [instagramPost, setInstagramPost] = useState<InstagramPostData>(); const [instagramError, setInstagramError] = useState(''); const [instagramImageWarning, setInstagramImageWarning] = useState(''); const [instagramLoading, setInstagramLoading] = useState(false); const [sharedLibrarySaved, setSharedLibrarySaved] = useState(false); const [sharedLibrarySaving, setSharedLibrarySaving] = useState(false); const [sharedLibraryError, setSharedLibraryError] = useState(''); const [sharedLibraryAvailable, setSharedLibraryAvailable] = useState(false);
@@ -113,11 +120,53 @@ export default function App() {
   useEffect(() => { if (!template || !canvasRef.current) return; setReady(false); render(canvasRef.current, template, { ...values, text1Style, text2Style, specialStyles, verticalOffset, imageScale, imageOffsetX, imageOffsetY, uploaded: upload }).then(() => setReady(true)).catch(() => { setReady(false); setError('テンプレート画像を読み込めませんでした'); }); }, [template, values, text1Style, text2Style, specialStyles, verticalOffset, imageScale, imageOffsetX, imageOffsetY, upload]);
   useEffect(() => { setGenerated(false); setShareDone(false); setSharedLibrarySaved(false); setSharedLibrarySaving(false); setSharedLibraryError(''); }, [template, values, upload]);
   useEffect(() => { void isSharedLibraryAvailable().then(setSharedLibraryAvailable); }, []);
-  const selectType = (next: PostType) => { if (next === 'officialLine') { setType(next); setShop(''); setError(''); setClearMessage(''); return; } setType(next); resetImagePosition(); const available = getTemplates(next); if (next === 'roomsRadio' || next === 'lineRich' || next === 'standFm') { setShop(available[0].id); setSpecialStyles(defaultSpecialStyles(next)); setValues((current) => ({ ...current, number: localStorage.getItem(LAST_RADIO_NUMBER_KEY) || '' })); } else { if (!available.some((item) => item.id === shop)) setShop(''); const defaults = defaultTextStyles(next); setText1Style(defaults.text1); setText2Style(defaults.text2); setVerticalOffset(0); } setError(''); setClearMessage(''); };
+  const selectType = (next: PostType) => { if (next === 'officialLine') { setType(next); setShop(''); setError(''); setClearMessage(''); return; } setType(next); resetImagePosition(); const available = getTemplates(next); if (next === 'roomsRadio' || next === 'lineRich' || next === 'standFm') { setShop(available[0].id); setSpecialStyles(defaultSpecialStyles(next)); setValues((current) => ({ ...current, number: next === 'standFm' ? localStorage.getItem(LAST_RADIO_NUMBER_KEY) || '' : '' })); } else { if (!available.some((item) => item.id === shop)) setShop(''); const defaults = defaultTextStyles(next); setText1Style(defaults.text1); setText2Style(defaults.text2); setVerticalOffset(0); } setError(''); setClearMessage(''); };
   const imageSelected = async (event: ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; setError(''); try { setUpload(await makeSafeImage(file)); setUploadName(file.name); resetImagePosition(); } catch { setError('この画像形式は読み込めません。JPEGまたはPNGでお試しください'); event.target.value = ''; } };
   const updateNumber = (number: string) => { setValues({ ...values, number }); if (type === 'standFm') localStorage.setItem(LAST_RADIO_NUMBER_KEY, number); };
   const loadInstagramPost = async () => { const parsed = parseInstagramUrl(instagramUrl); if ('error' in parsed) { setInstagramPost(undefined); setNormalizedInstagramUrl(''); setInstagramError(parsed.error === 'empty' ? 'Instagram投稿URLを入力してください' : parsed.error === 'not-instagram' ? 'Instagramの投稿URLを入力してください' : 'Instagram投稿URLを正しく読み取れませんでした'); return; } setInstagramLoading(true); setInstagramError(''); setInstagramImageWarning(''); setInstagramPost(undefined); await new Promise<void>((resolve) => window.setTimeout(resolve, 250)); try { const fetched = await fetchInstagramPost(parsed.data); const post = fetched || parsed.data; setInstagramPost(post); setNormalizedInstagramUrl(post.normalizedUrl); if (!fetched) return; const target = applyInstagramPostToForm(post); setInstagramUrl(target.instagramUrl || post.normalizedUrl); if (target.shop && getTemplates('notice').some((item) => item.id === target.shop)) setShop(target.shop); if (target.imageUrl) try { const response = await fetch(instagramImageProxyUrl(target.imageUrl)); if (!response.ok) throw new Error(); const blob = await response.blob(); setUpload(await makeSafeImage(new File([blob], 'instagram-image', { type: blob.type || 'image/jpeg' }))); setUploadName('Instagram投稿画像'); resetImagePosition(); } catch { setInstagramImageWarning('投稿本文は取得できましたが、画像を取得できませんでした。画像は手動で選択してください。'); } } catch (caught) { const code = (caught as Error & { code?: string }).code; setInstagramError(code === 'NOT_FOUND' ? '接続済み加盟店のInstagramからこの投稿を見つけられませんでした。' : code === 'NOT_CONFIGURED' ? 'このInstagramアカウントはまだ自動取得に対応していません。' : 'Instagram投稿の取得に失敗しました。もう一度お試しください。'); } finally { setInstagramLoading(false); } };
-  const clearAll = () => { if (!window.confirm('現在の入力内容をすべてクリアしますか？')) return; setType(''); setShop(''); setValues(initial); setText1Style(defaultTextStyles('').text1); setText2Style(defaultTextStyles('').text2); setSpecialStyles(defaultSpecialStyles('')); setVerticalOffset(0); resetImagePosition(); setUpload(undefined); setUploadName(''); setError(''); setAdvanced(false); setTextSettings(false); setReady(false); setGenerated(false); setShareDone(false); setSharing(false); setChatOpen(false); setRequestType('post'); setAdditionalInstructions(''); setChatPrompt(''); setChatStatus(''); setInstagramUrl(''); setNormalizedInstagramUrl(''); setInstagramPost(undefined); setInstagramError(''); setInstagramImageWarning(''); localStorage.removeItem('rooms:type'); localStorage.removeItem('rooms:shop'); if (fileInputRef.current) fileInputRef.current.value = ''; setClearMessage('入力内容をクリアしました'); };
+  const clearAll = () => {
+    if (!window.confirm('現在の入力内容をすべてクリアしますか？')) return;
+
+    // Do not clear `type` or `shop`: this button resets the active work, not
+    // the user's place in the prescribed creation flow. Re-applying defaults
+    // also removes every styling value retained in React state.
+    setValues(emptyValues(type));
+    const textDefaults = defaultTextStyles(type);
+    setText1Style(textDefaults.text1);
+    setText2Style(textDefaults.text2);
+    setSpecialStyles(defaultSpecialStyles(type));
+    setVerticalOffset(0);
+    resetImagePosition();
+    setUpload(undefined);
+    setUploadName('');
+    setError('');
+    setAdvanced(false);
+    setTextSettings(false);
+    setPreviewExpanded(false);
+    // Replace the canvas as well as its data. This prevents an older
+    // asynchronous draw from repainting a preview after it has been cleared.
+    setPreviewResetKey((current) => current + 1);
+    setReady(false);
+    setGenerated(false);
+    setShareDone(false);
+    setSharing(false);
+    setSharedLibrarySaved(false);
+    setSharedLibrarySaving(false);
+    setSharedLibraryError('');
+    setChatOpen(false);
+    setRequestType('post');
+    setAdditionalInstructions('');
+    setChatPrompt('');
+    setChatStatus('');
+    setInstagramUrl('');
+    setNormalizedInstagramUrl('');
+    setInstagramPost(undefined);
+    setInstagramError('');
+    setInstagramImageWarning('');
+    setInstagramLoading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setClearMessage(type === 'standFm' ? '入力内容をクリアしました（回数番号は保持しています）' : '入力内容をクリアしました');
+  };
   const generate = () => { if (!type) return setError('投稿タイプを選択してください'); if (!shop) return setError('加盟店を選択してください'); if (isSpecialType && !values.number.trim()) return setError('回数番号を入力してください'); if (!(values.text1.trim() || values.text2.trim())) return setError(type === 'notice' ? 'テキスト1またはテキスト2を入力してください' : 'タイトルを入力してください'); if (!ready) return setError('テンプレート画像を読み込めませんでした'); setError(''); setGenerated(true); setShareDone(false); };
   const fileName = () => `ROOMs_${({ notice: 'お知らせ投稿', health: '健康情報', roomsRadio: 'ROOMsラジオ', lineRich: 'LINEリッチメッセージ', standFm: 'standfm', officialLine: '公式LINE', instagram_story_1: 'Instagram投稿1', instagram_story_2: 'Instagram投稿2', instagram_story_3: 'Instagram投稿3', instagram_story_4: 'Instagram投稿4' }[type || 'notice'])}_${template?.shop}_${dateString()}.png`;
   const pngFile = async () => new File([await new Promise<Blob>((resolve) => canvasRef.current!.toBlob((blob) => resolve(blob!), 'image/png'))], fileName(), { type: 'image/png' });
@@ -147,7 +196,7 @@ export default function App() {
     {type && !isSpecialType && <section className="card"><h2><span>{type === 'health' ? '4' : '5'}</span> 画像</h2><p className="hint">{type === 'health' ? '健康情報では任意です。' : '投稿画像を1枚選択してください。'}</p><label className="upload"><input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={imageSelected} />{type === 'health' ? '画像を選択（任意）' : '画像を選択'}</label>{uploadName && <><p className="file">選択中：{uploadName}</p><label className="image-scale-control">画像サイズ <output>{Math.round(imageScale * 100)}%</output><input type="range" min="60" max="160" step="1" value={Math.round(imageScale * 100)} onChange={(e) => setImageScale(Number(e.target.value) / 100)} /></label><div className="image-position-controls"><label>左右 <output>{imageOffsetX > 0 ? '+' : ''}{imageOffsetX}</output><input type="range" min="-150" max="150" step="1" value={imageOffsetX} onChange={(e) => setImageOffsetX(Number(e.target.value))} /></label><label>上下 <output>{imageOffsetY > 0 ? '+' : ''}{imageOffsetY}</output><input type="range" min="-150" max="150" step="1" value={imageOffsetY} onChange={(e) => setImageOffsetY(Number(e.target.value))} /></label></div><button className="reset-image-scale" onClick={resetImagePosition}>初期位置に戻す</button></>}</section>}
     {type === 'health' && <section className="card"><button className="details" onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}>詳細設定（任意） <b>{advanced ? '−' : '+'}</b></button>{advanced && <div className="advanced"><label>サブタイトル<input value={values.subtitle} onChange={(e) => setValues({ ...values, subtitle: e.target.value })} /></label><label>ハッシュタグ1<input value={values.tag1} onChange={(e) => setValues({ ...values, tag1: e.target.value })} /></label><label>ハッシュタグ2<input value={values.tag2} onChange={(e) => setValues({ ...values, tag2: e.target.value })} /></label>{needsLabel && <label>上部ラベル<input value={values.label} onChange={(e) => setValues({ ...values, label: e.target.value })} /></label>}</div>}</section>}
     <section className="card chatgpt-card"><button className="details" onClick={() => setChatOpen(!chatOpen)} aria-expanded={chatOpen}>ChatGPT連携 <b>{chatOpen ? '−' : '+'}</b></button>{chatOpen && <div className="advanced chatgpt-content"><fieldset className="chat-request-type"><legend>依頼タイプ</legend><div className="choices two"><button className={requestType === 'post' ? 'selected' : ''} onClick={() => setRequestType('post')}>投稿文作成用</button><button className={requestType === 'image' ? 'selected' : ''} onClick={() => setRequestType('image')}>画像生成用</button></div></fieldset><label>追加の指示<textarea value={additionalInstructions} onChange={(e) => setAdditionalInstructions(e.target.value)} placeholder="例：短めにまとめてください" rows={3} /></label><button className="chat-generate" onClick={makeChatPrompt}>{requestType === 'post' ? '投稿文作成用プロンプトを作成' : '画像生成用プロンプトを作成'}</button>{chatPrompt && <><label>生成されたプロンプト<textarea id="chatgpt-prompt" value={chatPrompt} readOnly rows={14} /></label><button onClick={copyChatPrompt}>コピー</button></>}<a className="chat-open" href={CHATGPT_CHAT_URL} target="_blank" rel="noopener noreferrer">{requestType === 'post' ? 'chatGPTで投稿文を作成' : 'chatGPTで画像を作成'}</a>{chatStatus && <p className="chat-status" role="status">{chatStatus}</p>}</div>}</section>
-    <FixedPreview expanded={previewExpanded} onToggle={() => setPreviewExpanded((current) => !current)}>{template ? <canvas ref={canvasRef} aria-label="完成イメージのプレビュー" /> : <div className="empty">投稿タイプと加盟店を選ぶと表示されます</div>}</FixedPreview>
+    <FixedPreview expanded={previewExpanded} onToggle={() => setPreviewExpanded((current) => !current)}>{template ? <canvas key={previewResetKey} ref={canvasRef} aria-label="完成イメージのプレビュー" /> : <div className="empty">投稿タイプと加盟店を選ぶと表示されます</div>}</FixedPreview>
     {error && <p className="error" role="alert">{error}</p>}{clearMessage && <p className="clear-status" role="status">{clearMessage}</p>}<button className="create" onClick={generate}>画像を作成</button><button className="clear-inputs" onClick={clearAll}>入力内容をすべてクリア</button>{generated && <section className="exports" aria-label="保存と投稿"><h2>完成しました</h2>{isMobile ? <><button className="photo-save" onClick={share} disabled={sharing}>{sharing ? '共有画面を開いています…' : 'カメラロールに保存'}</button><p className="save-guide">共有画面で「画像を保存」を選んでください。</p><button className="photo-save" onClick={download}>ファイルに保存</button></> : <button className="photo-save" onClick={download}>ファイルに保存</button>}<button className="shared-library-save" onClick={() => void saveCurrentImageToSharedLibrary()} disabled={sharedLibrarySaved || sharedLibrarySaving}>{sharedLibrarySaved ? '共有ライブラリに保存済み' : sharedLibrarySaving ? '共有ライブラリに保存しています…' : '共有ライブラリに保存'}</button>{sharedLibraryError && <p className="shared-library-error" role="alert">{sharedLibraryError}</p>}<button className="wordpress" onClick={openWordPressDraft}>WordPressに投稿</button></section>}
     <footer>画像はブラウザ内で処理され、外部サーバーには送信されません。</footer>
   </main>;
