@@ -1,0 +1,8 @@
+.instagram-story-card > label { display: block; margin: 12px 0; font-size: 14px; }
+.instagram-story-card .line-image-actions { display: grid; gap: 10px; margin-top: 16px; }
+.instagram-story-card .line-image-actions button { width: 100%; }
+.instagram-story-card .upload { margin-top: 0; }
+.story-image-slot { margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee; }
+.story-image-slot h3 { margin: 0 0 10px; font-size: 16px; }
+.fixed-preview canvas { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(35svh - 60px); aspect-ratio: 9 / 16; object-fit: contain; background: #111; }
+@media (min-width: 760px) { .fixed-preview canvas { max-height: calc(60svh - 54px); } }

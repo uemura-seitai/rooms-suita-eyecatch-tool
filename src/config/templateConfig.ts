@@ -1,4 +1,4 @@
-export type PostType = 'notice' | 'health' | 'roomsRadio' | 'lineRich' | 'standFm' | 'officialLine';
+export type PostType = 'notice' | 'health' | 'roomsRadio' | 'lineRich' | 'standFm' | 'officialLine' | 'instagram_story_1' | 'instagram_story_2' | 'instagram_story_3' | 'instagram_story_4';
 export type Box = { x: number; y: number; width: number; height: number };
 export type Template = {
   id: string; type: PostType; shop: string; asset: string; canvas: { width: number; height: number };
