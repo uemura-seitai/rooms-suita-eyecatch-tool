@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getTemplate, getTemplates, type PostType } from './config/templateConfig';
+import { FONT_OPTIONS } from './config/fontOptions';
 import { createChatGptPrompt, type PromptRequestType } from './utils/chatgptPrompt';
 import { render, type SpecialTextStyle, type TextStyle } from './utils/canvas';
 import { applyInstagramPostToForm, fetchInstagramPost, instagramImageProxyUrl, parseInstagramUrl, type InstagramPostData } from './utils/instagram';
@@ -16,7 +17,6 @@ const POST_TYPE_OPTIONS: { id: PostType; label: string }[] = [
   { id: 'instagram_story_1', label: 'Instagramに投稿①（予約空き情報）' }, { id: 'instagram_story_2', label: 'Instagramに投稿②（クイズ）' }, { id: 'instagram_story_3', label: 'Instagramに投稿③（ブログ更新）' }, { id: 'instagram_story_4', label: 'Instagramに投稿④（ROOMs投稿）' },
 ];
 const LAST_RADIO_NUMBER_KEY = 'rooms:last-standfm-number';
-const FONT_OPTIONS = [{ label: 'ゴシック', value: '"Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif' }, { label: '明朝', value: '"Hiragino Mincho ProN", "Yu Mincho", serif' }, { label: '丸ゴシック', value: '"Hiragino Maru Gothic ProN", "Noto Sans JP", sans-serif' }, { label: 'Noto Sans JP', value: '"Noto Sans JP", sans-serif' }, { label: 'Yu Gothic', value: '"Yu Gothic", YuGothic, sans-serif' }, { label: 'Hiragino Kaku Gothic ProN', value: '"Hiragino Kaku Gothic ProN", sans-serif' }, { label: 'serif', value: 'serif' }, { label: 'sans-serif', value: 'sans-serif' }];
 const defaultStyle = (size: number): TextStyle => ({ size, family: FONT_OPTIONS[0].value, color: '#333333', weight: 700, offsetX: 0, offsetY: 0 });
 const defaultTextStyles = (postType: PostType | '') => ({
   text1: defaultStyle(postType === 'health' ? 80 : postType === 'notice' ? 50 : 44),
