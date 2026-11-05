@@ -34,7 +34,41 @@ export default function InstagramStoryEditor({ type, onClear }: { type: Type; on
   const [values, setValues] = useState(defaults); const [textStyles, setTextStyles] = useState<Record<StoryTextKey, StoryTextStyle>>(initialTextStyles); const [openTextSettings, setOpenTextSettings] = useState<StoryTextKey>(); const [picked, setPicked] = useState<HTMLImageElement>(); const [label, setLabel] = useState(''); const [scale, setScale] = useState(1); const [offsetX, setOffsetX] = useState(0); const [offsetY, setOffsetY] = useState(0); const [before, setBefore] = useState<ImageSettings>(emptyImageSettings); const [after, setAfter] = useState<ImageSettings>(emptyImageSettings); const [picker, setPicker] = useState(false); const [pickerTarget, setPickerTarget] = useState<'image' | 'before' | 'after'>('image'); const [expanded, setExpanded] = useState(false); const [done, setDone] = useState(false); const [status, setStatus] = useState(''); const [rendering, setRendering] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null); const sourceVideoRef = useRef<HTMLVideoElement>(null); const frameRef = useRef<number>();
   const quiz = type === 'instagram_story_2'; const videoStory = type !== 'instagram_story_1';
-  const drawReservation = useCallback(async () => { const canvas = canvasRef.current; if (!canvas) return; const context = canvas.getContext('2d')!; canvas.width = 1080; canvas.height = 1920; const background = await load(`${base}instagram-story-1-template.png`); context.drawImage(background, 0, 0); context.fillStyle = '#fff'; context.fillRect(155, 760, 770, 454); context.fillRect(155, 1248, 770, 498); clearDatePlaceholder(context); drawStyledText(context, values.date, 540, 535, textStyles.date); context.fillStyle = '#ffe762'; context.beginPath(); context.roundRect(180, 810, 520, 270, 25); context.fill(); ([['午前', values.am, 'am'], ['午後', values.pm, 'pm'], ['夜間', values.night, 'night']] as const).forEach(([period, vacancy, key], index) => drawStyledText(context, `【${period}】 ${vacancy}`, 440, 865 + index * 82, textStyles[key])); const hasOpening = [values.am, values.pm, values.night].some((vacancy) => vacancy !== '空きなし'); const mascot = await load(`${base}instagram-story-1-character-${hasOpening ? 'open' : 'full'}.png`); contain(context, mascot, 705, 790, 190, 290); drawStyledText(context, values.guide, 230, 1150, textStyles.guide, 'left'); context.font = `${textStyles.person.weight} ${textStyles.person.size}px ${textStyles.person.family}`; const personWidth = context.measureText(values.person).width; context.font = `${textStyles.theme.weight} ${textStyles.theme.size}px ${textStyles.theme.family}`; const themeWidth = context.measureText(values.theme).width; const gap = 45; const start = 540 - (personWidth + gap + themeWidth) / 2; drawStyledText(context, values.person, start + personWidth / 2, 1300, textStyles.person); drawStyledText(context, values.theme, start + personWidth + gap + themeWidth / 2, 1300, textStyles.theme); if (before.image) cover(context, before.image, 215, 1330, 300, 300, before.scale, before.offsetX, before.offsetY); if (after.image) cover(context, after.image, 565, 1330, 300, 300, after.scale, after.offsetX, after.offsetY); drawStyledText(context, 'Before', 365, 1680, textStyles.before); drawStyledText(context, 'After', 715, 1680, textStyles.after); }, [after, before, textStyles, values]);
+  const drawReservation = useCallback(async () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const context = canvas.getContext('2d')!;
+    canvas.width = 1080; canvas.height = 1920;
+    const background = await load(`${base}instagram-story-1-template.png`);
+    context.drawImage(background, 0, 0);
+
+    // White panels are painted before their content so later images cannot hide the heading.
+    context.fillStyle = '#fff';
+    context.fillRect(155, 760, 770, 454);
+    context.fillRect(155, 1248, 770, 522);
+    clearDatePlaceholder(context);
+    drawStyledText(context, values.date, 540, 535, textStyles.date);
+    context.fillStyle = '#ffe762'; context.beginPath(); context.roundRect(180, 810, 520, 270, 25); context.fill();
+    ([['午前', values.am, 'am'], ['午後', values.pm, 'pm'], ['夜間', values.night, 'night']] as const).forEach(([period, vacancy, key], index) => drawStyledText(context, `【${period}】 ${vacancy}`, 440, 865 + index * 82, textStyles[key]));
+    const hasOpening = [values.am, values.pm, values.night].some((vacancy) => vacancy !== '空きなし');
+    const mascot = await load(`${base}instagram-story-1-character-${hasOpening ? 'open' : 'full'}.png`);
+    contain(context, mascot, 600, 740, 360, 400);
+    drawStyledText(context, values.guide, 230, 1150, textStyles.guide, 'left');
+
+    const personY = 1272; const imageY = 1310; const imageHeight = 380; const labelY = 1720;
+    context.font = `${textStyles.person.weight} ${textStyles.person.size}px ${textStyles.person.family}`;
+    const personWidth = context.measureText(values.person).width;
+    context.font = `${textStyles.theme.weight} ${textStyles.theme.size}px ${textStyles.theme.family}`;
+    const themeWidth = context.measureText(values.theme).width;
+    const gap = 45; const start = 540 - (personWidth + gap + themeWidth) / 2;
+    if (before.image) cover(context, before.image, 215, imageY, 300, imageHeight, before.scale, before.offsetX, before.offsetY);
+    if (after.image) cover(context, after.image, 565, imageY, 300, imageHeight, after.scale, after.offsetX, after.offsetY);
+    // Draw the heading after image layers, at a distinct position above them.
+    drawStyledText(context, values.person, start + personWidth / 2, personY, textStyles.person);
+    drawStyledText(context, values.theme, start + personWidth + gap + themeWidth / 2, personY, textStyles.theme);
+    drawStyledText(context, 'Before', 365, labelY, textStyles.before);
+    drawStyledText(context, 'After', 715, labelY, textStyles.after);
+  }, [after, before, textStyles, values]);
   const drawVideoFrame = useCallback(() => { const canvas = canvasRef.current; const video = sourceVideoRef.current; if (!canvas || !video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return; const context = canvas.getContext('2d')!; canvas.width = 1080; canvas.height = 1920; context.drawImage(video, 0, 0, 1080, 1920); if (quiz) { drawStyledText(context, values.question, 365, 700, textStyles.question, 'left'); drawStyledText(context, values.one, 470, 1010, textStyles.one); drawStyledText(context, values.two, 470, 1175, textStyles.two); } else if (picked) { const area = imageArea(type); cover(context, picked, area.x, area.y, area.width, area.height, scale, offsetX, offsetY); } }, [offsetX, offsetY, picked, quiz, scale, textStyles, type, values]);
   useEffect(() => { if (!videoStory) void drawReservation(); }, [drawReservation, videoStory]);
   useEffect(() => { if (!videoStory) return; const video = sourceVideoRef.current; if (!video) return; const renderPreview = () => { drawVideoFrame(); frameRef.current = requestAnimationFrame(renderPreview); }; const start = () => { void video.play().catch(() => undefined); cancelAnimationFrame(frameRef.current!); renderPreview(); }; video.addEventListener('loadeddata', start); video.addEventListener('seeked', drawVideoFrame); if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) start(); return () => { video.pause(); video.removeEventListener('loadeddata', start); video.removeEventListener('seeked', drawVideoFrame); cancelAnimationFrame(frameRef.current!); }; }, [drawVideoFrame, videoStory, type]);
