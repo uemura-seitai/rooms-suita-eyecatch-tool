@@ -115,7 +115,40 @@ export default function InstagramStoryEditor({ type, onClear }: { type: Type; on
     drawStyledText(context, 'Before', 365, labelY, textStyles.before);
     drawStyledText(context, 'After', 715, labelY, textStyles.after);
   }, [after, before, textStyles, values]);
-  const drawVideoFrame = useCallback(() => { const canvas = canvasRef.current; const video = sourceVideoRef.current; if (!canvas || !video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return; const context = canvas.getContext('2d')!; canvas.width = 1080; canvas.height = 1920; context.drawImage(video, 0, 0, 1080, 1920); if (quiz) { drawStyledText(context, values.question, 365, 700, textStyles.question, 'left'); drawStyledText(context, values.one, 470, 1010, textStyles.one); drawStyledText(context, values.two, 470, 1175, textStyles.two); drawText(context, values.stamp1, 825, 1010, 64); drawText(context, values.stamp2, 825, 1175, 64); } else if (picked) { const area = imageArea(type); cover(context, picked, area.x, area.y, area.width, area.height, scale, offsetX, offsetY); if (type === 'instagram_story_3' && values.imageText) { context.save(); context.beginPath(); context.rect(area.x, area.y, area.width, area.height); context.clip(); drawStyledText(context, values.imageText, area.x + area.width / 2, area.y + 72, textStyles.imageText); context.restore(); } } }, [offsetX, offsetY, picked, quiz, scale, textStyles, type, values]);
+  const drawVideoFrame = useCallback(() => {
+    const canvas = canvasRef.current;
+    const video = sourceVideoRef.current;
+    if (!canvas || !video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
+
+    const context = canvas.getContext('2d')!;
+    canvas.width = 1080;
+    canvas.height = 1920;
+    // This function is used by both the requestAnimationFrame preview and MP4 recording.
+    context.drawImage(video, 0, 0, 1080, 1920);
+
+    if (quiz) {
+      drawStyledText(context, values.question, 365, 700, textStyles.question, 'left');
+      drawStyledText(context, values.one, 470, 1010, textStyles.one);
+      drawStyledText(context, values.two, 470, 1175, textStyles.two);
+      drawText(context, values.stamp1, 825, 1010, 64);
+      drawText(context, values.stamp2, 825, 1175, 64);
+      return;
+    }
+
+    const area = imageArea(type);
+    if (picked) cover(context, picked, area.x, area.y, area.width, area.height, scale, offsetX, offsetY);
+
+    // Keep this independent of `picked`: typing text must update the preview
+    // even before a blog image has been selected. `cover` restores its own clip.
+    if (type === 'instagram_story_3' && values.imageText !== '') {
+      context.save();
+      context.beginPath();
+      context.rect(area.x, area.y, area.width, area.height);
+      context.clip();
+      drawStyledText(context, values.imageText, 540, 1102, textStyles.imageText, 'center');
+      context.restore();
+    }
+  }, [offsetX, offsetY, picked, quiz, scale, textStyles, type, values]);
   useEffect(() => { if (!previewVisible || videoStory) return; void drawReservation(); }, [drawReservation, previewVisible, videoStory]);
   useEffect(() => { if (!previewVisible || !videoStory) return; const video = sourceVideoRef.current; if (!video) return; const renderPreview = () => { drawVideoFrame(); frameRef.current = requestAnimationFrame(renderPreview); }; const start = () => { void video.play().catch(() => undefined); cancelAnimationFrame(frameRef.current!); renderPreview(); }; video.addEventListener('loadeddata', start); video.addEventListener('seeked', drawVideoFrame); if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) start(); return () => { video.pause(); video.removeEventListener('loadeddata', start); video.removeEventListener('seeked', drawVideoFrame); cancelAnimationFrame(frameRef.current!); }; }, [drawVideoFrame, previewVisible, videoStory, type]);
   const activatePreview = () => setPreviewVisible(true);
