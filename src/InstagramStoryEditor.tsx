@@ -19,7 +19,7 @@ export const formatStoryDate = (value: string) => {
   const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
   return `${month}/${date}(${weekdays[new Date(year, month - 1, date).getDay()]})`;
 };
-const defaults = (type: Type) => ({ date: type === 'instagram_story_1' ? todayInJapan() : '', am: '', pm: '', night: '', guide: '', age: type === 'instagram_story_1' ? '50代' : '', customAge: '', gender: type === 'instagram_story_1' ? '女性' : '', person: '', theme: '', question: '', one: '', two: '', stamp1: '', stamp2: '' });
+const defaults = (type: Type) => ({ date: type === 'instagram_story_1' ? todayInJapan() : '', am: '', pm: '', night: '', guide: '', age: type === 'instagram_story_1' ? '50代' : '', customAge: '', gender: type === 'instagram_story_1' ? '女性' : '', person: '', theme: '', question: '', one: '', two: '', stamp1: type === 'instagram_story_2' ? '🔥' : '', stamp2: type === 'instagram_story_2' ? '👏' : '' });
 type StoryValues = ReturnType<typeof defaults>;
 type StoryTextStyle = { size: number; family: string; color: string; weight: number; offsetX: number; offsetY: number };
 type StoryTextKey = 'date' | 'am' | 'pm' | 'night' | 'guide' | 'person' | 'theme' | 'before' | 'after' | 'question' | 'one' | 'two';
@@ -73,6 +73,9 @@ export default function InstagramStoryEditor({ type, onClear }: { type: Type; on
       if (!select.value) select.value = '';
     });
   }, [type, values.am, values.pm, values.night]);
+  useEffect(() => {
+    if (type === 'instagram_story_2') setValues((current) => ({ ...current, stamp1: '🔥', stamp2: '👏' }));
+  }, [type]);
   const drawReservation = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -112,7 +115,7 @@ export default function InstagramStoryEditor({ type, onClear }: { type: Type; on
     drawStyledText(context, 'Before', 365, labelY, textStyles.before);
     drawStyledText(context, 'After', 715, labelY, textStyles.after);
   }, [after, before, textStyles, values]);
-  const drawVideoFrame = useCallback(() => { const canvas = canvasRef.current; const video = sourceVideoRef.current; if (!canvas || !video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return; const context = canvas.getContext('2d')!; canvas.width = 1080; canvas.height = 1920; context.drawImage(video, 0, 0, 1080, 1920); if (quiz) { drawStyledText(context, values.question, 365, 700, textStyles.question, 'left'); drawStyledText(context, values.one, 470, 1010, textStyles.one); drawStyledText(context, values.two, 470, 1175, textStyles.two); } else if (picked) { const area = imageArea(type); cover(context, picked, area.x, area.y, area.width, area.height, scale, offsetX, offsetY); } }, [offsetX, offsetY, picked, quiz, scale, textStyles, type, values]);
+  const drawVideoFrame = useCallback(() => { const canvas = canvasRef.current; const video = sourceVideoRef.current; if (!canvas || !video || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return; const context = canvas.getContext('2d')!; canvas.width = 1080; canvas.height = 1920; context.drawImage(video, 0, 0, 1080, 1920); if (quiz) { drawStyledText(context, values.question, 365, 700, textStyles.question, 'left'); drawStyledText(context, values.one, 470, 1010, textStyles.one); drawStyledText(context, values.two, 470, 1175, textStyles.two); drawText(context, values.stamp1, 825, 1010, 64); drawText(context, values.stamp2, 825, 1175, 64); } else if (picked) { const area = imageArea(type); cover(context, picked, area.x, area.y, area.width, area.height, scale, offsetX, offsetY); } }, [offsetX, offsetY, picked, quiz, scale, textStyles, type, values]);
   useEffect(() => { if (!previewVisible || videoStory) return; void drawReservation(); }, [drawReservation, previewVisible, videoStory]);
   useEffect(() => { if (!previewVisible || !videoStory) return; const video = sourceVideoRef.current; if (!video) return; const renderPreview = () => { drawVideoFrame(); frameRef.current = requestAnimationFrame(renderPreview); }; const start = () => { void video.play().catch(() => undefined); cancelAnimationFrame(frameRef.current!); renderPreview(); }; video.addEventListener('loadeddata', start); video.addEventListener('seeked', drawVideoFrame); if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) start(); return () => { video.pause(); video.removeEventListener('loadeddata', start); video.removeEventListener('seeked', drawVideoFrame); cancelAnimationFrame(frameRef.current!); }; }, [drawVideoFrame, previewVisible, videoStory, type]);
   const activatePreview = () => setPreviewVisible(true);
