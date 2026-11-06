@@ -4,5 +4,6 @@
 .instagram-story-card .upload { margin-top: 0; }
 .story-image-slot { margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee; }
 .story-image-slot h3 { margin: 0 0 10px; font-size: 16px; }
+.exports .wordpress { display: flex; align-items: center; justify-content: center; min-height: 58px; padding: 9px; font-weight: 600; text-align: center; text-decoration: none; }
 .fixed-preview canvas { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(35svh - 60px); aspect-ratio: 9 / 16; object-fit: contain; background: #111; }
 @media (min-width: 760px) { .fixed-preview canvas { max-height: calc(60svh - 54px); } }
