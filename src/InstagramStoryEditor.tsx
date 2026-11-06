@@ -38,6 +38,9 @@ const contain = (context: CanvasRenderingContext2D, image: HTMLImageElement, x: 
 const clearDatePlaceholder = (context: CanvasRenderingContext2D) => { context.save(); context.fillStyle = '#fff'; context.beginPath(); context.moveTo(235, 526); context.quadraticCurveTo(270, 475, 350, 485); context.quadraticCurveTo(540, 462, 748, 485); context.quadraticCurveTo(855, 490, 852, 545); context.quadraticCurveTo(842, 612, 748, 610); context.lineTo(325, 620); context.quadraticCurveTo(230, 605, 235, 526); context.fill(); context.fillStyle = '#E5E8DD'; context.beginPath(); context.roundRect(270, 485, 540, 100, 42); context.fill(); context.restore(); };
 const videoFile = (type: Type) => `${base}instagram-story-${type.slice(-1)}-template.mp4`;
 const imageArea = (type: Type) => type === 'instagram_story_3' ? { x: 185, y: 1030, width: 710, height: 410 } : { x: 140, y: 930, width: 805, height: 400 };
+// Instagram③ has a white header area inside the phone, above the article image.
+// It is part of the safe area for the optional title, but not for the image itself.
+const imageTextArea = (type: Type) => type === 'instagram_story_3' ? { x: 185, y: 880, width: 710, height: 560 } : imageArea(type);
 const mp4Mime = () => MediaRecorder.isTypeSupported('video/mp4;codecs=avc1') ? 'video/mp4;codecs=avc1' : MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4' : '';
 
 export default function InstagramStoryEditor({ type, onClear }: { type: Type; onClear: () => void }) {
@@ -141,11 +144,12 @@ export default function InstagramStoryEditor({ type, onClear }: { type: Type; on
     // Keep this independent of `picked`: typing text must update the preview
     // even before a blog image has been selected. `cover` restores its own clip.
     if (type === 'instagram_story_3' && values.imageText !== '') {
+      const textArea = imageTextArea(type);
       context.save();
       context.beginPath();
-      context.rect(area.x, area.y, area.width, area.height);
+      context.rect(textArea.x, textArea.y, textArea.width, textArea.height);
       context.clip();
-      drawStyledText(context, values.imageText, 540, 1102, textStyles.imageText, 'center');
+      drawStyledText(context, values.imageText, 540, 960, textStyles.imageText, 'center');
       context.restore();
     }
   }, [offsetX, offsetY, picked, quiz, scale, textStyles, type, values]);
