@@ -117,7 +117,25 @@ export default function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null); const fileInputRef = useRef<HTMLInputElement>(null); const template = type && shop ? getTemplate(type, shop) : undefined;
   const isRadioType = type === 'roomsRadio' || type === 'lineRich'; const isSpecialType = isRadioType || type === 'standFm';
   const resetImagePosition = () => { setImageScale(1); setImageOffsetX(0); setImageOffsetY(0); };
-  useEffect(() => { if (!template || !canvasRef.current) return; setReady(false); render(canvasRef.current, template, { ...values, text1Style, text2Style, specialStyles, verticalOffset, imageScale, imageOffsetX, imageOffsetY, uploaded: upload }).then(() => setReady(true)).catch(() => { setReady(false); setError('テンプレート画像を読み込めませんでした'); }); }, [template, values, text1Style, text2Style, specialStyles, verticalOffset, imageScale, imageOffsetX, imageOffsetY, upload]);
+  useEffect(() => {
+    if (!template || !canvasRef.current) return;
+    let active = true;
+    const nextCanvas = document.createElement('canvas');
+    setReady(false);
+    render(nextCanvas, template, { ...values, text1Style, text2Style, specialStyles, verticalOffset, imageScale, imageOffsetX, imageOffsetY, uploaded: upload }).then(() => {
+      if (!active || !canvasRef.current) return;
+      const preview = canvasRef.current;
+      preview.width = nextCanvas.width;
+      preview.height = nextCanvas.height;
+      preview.getContext('2d')!.drawImage(nextCanvas, 0, 0);
+      setReady(true);
+    }).catch(() => {
+      if (!active) return;
+      setReady(false);
+      setError('テンプレート画像を読み込めませんでした');
+    });
+    return () => { active = false; };
+  }, [template, values, text1Style, text2Style, specialStyles, verticalOffset, imageScale, imageOffsetX, imageOffsetY, upload]);
   useEffect(() => { setGenerated(false); setShareDone(false); setSharedLibrarySaved(false); setSharedLibrarySaving(false); setSharedLibraryError(''); }, [template, values, upload]);
   useEffect(() => { void isSharedLibraryAvailable().then(setSharedLibraryAvailable); }, []);
   const selectType = (next: PostType) => { if (next === 'officialLine') { setType(next); setShop(''); setError(''); setClearMessage(''); return; } setType(next); resetImagePosition(); const available = getTemplates(next); if (next === 'roomsRadio' || next === 'lineRich' || next === 'standFm') { setShop(available[0].id); setSpecialStyles(defaultSpecialStyles(next)); setValues((current) => ({ ...current, number: next === 'standFm' ? localStorage.getItem(LAST_RADIO_NUMBER_KEY) || '' : '' })); } else { if (!available.some((item) => item.id === shop)) setShop(''); const defaults = defaultTextStyles(next); setText1Style(defaults.text1); setText2Style(defaults.text2); setVerticalOffset(0); } setError(''); setClearMessage(''); };
